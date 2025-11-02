@@ -82,16 +82,18 @@ func main() {
 
 	// Create UI elements with EQ-style colors
 	titleLabel := canvas.NewText("EverQuest", theme.ForegroundColor())
-	titleLabel.TextSize = 24
+	titleLabel.TextSize = 28
 	titleLabel.TextStyle = fyne.TextStyle{Bold: true}
 	titleLabel.Alignment = fyne.TextAlignCenter
 
 	serverLabel := canvas.NewText(config.ServerName, theme.ForegroundColor())
-	serverLabel.TextSize = 14
+	serverLabel.TextSize = 16
 	serverLabel.Alignment = fyne.TextAlignCenter
 
 	statusLabel = widget.NewLabel("Initializing...")
 	statusLabel.Alignment = fyne.TextAlignCenter
+	statusLabel.Importance = widget.MediumImportance
+	statusLabel.TextStyle = fyne.TextStyle{Bold: true}
 
 	progressBar = widget.NewProgressBar()
 	progressBar.Hide()
@@ -139,6 +141,18 @@ func main() {
 	}
 	leftButtons.Add(exitButton)
 
+	// Create centered content with better spacing
+	centerContent := container.NewVBox(
+		layout.NewSpacer(),
+		container.NewCenter(titleLabel),
+		container.NewCenter(serverLabel),
+		layout.NewSpacer(),
+		layout.NewSpacer(),
+		container.NewCenter(statusLabel),
+		container.NewCenter(progressBar),
+		layout.NewSpacer(),
+	)
+
 	// Create overlay container with new layout
 	overlay := container.NewBorder(
 		// Top: Graphics Settings button
@@ -154,15 +168,7 @@ func main() {
 		// Right: empty
 		nil,
 		// Center: Title, Status, Progress
-		container.NewVBox(
-			layout.NewSpacer(),
-			container.NewCenter(titleLabel),
-			container.NewCenter(serverLabel),
-			layout.NewSpacer(),
-			container.NewCenter(statusLabel),
-			container.NewCenter(progressBar),
-			layout.NewSpacer(),
-		),
+		centerContent,
 	)
 
 	// Stack background and overlay
