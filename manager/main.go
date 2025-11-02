@@ -143,14 +143,16 @@ func makeConnectionTabIntegrated(state *AppState) *fyne.Container {
 	return container.NewPadded(form)
 }
 
-// makeFileUploadTabIntegrated creates the file upload tab with tree browsers
+// makeFileUploadTabIntegrated creates the file upload tab with drag-and-drop
 func makeFileUploadTabIntegrated(state *AppState) *fyne.Container {
-	// Local folder browser with tree
+	// Local folder browser
 	var localRootPath string
 	var localFileMap map[string]*FileItem
+	var selectedLocalFiles []string
 	localFileMap = make(map[string]*FileItem)
 
-	localPathLabel := widget.NewLabel("Local Folder: (not selected)")
+	localPathLabel := widget.NewLabel("📂 Local Folder: (not selected)")
+	localPathLabel.TextStyle = fyne.TextStyle{Bold: true}
 
 	selectLocalFolderBtn := widget.NewButton("Select Local Folder", func() {
 		dialog.ShowFolderOpen(func(uri fyne.ListableURI, err error) {
@@ -159,7 +161,7 @@ func makeFileUploadTabIntegrated(state *AppState) *fyne.Container {
 			}
 
 			localRootPath = uri.Path()
-			localPathLabel.SetText("Local Folder: " + filepath.Base(localRootPath))
+			localPathLabel.SetText("📂 Local Folder: " + filepath.Base(localRootPath))
 
 			// Scan local files
 			files, err := GetLocalFiles(localRootPath)
@@ -198,10 +200,12 @@ func makeFileUploadTabIntegrated(state *AppState) *fyne.Container {
 		func(id widget.ListItemID, obj fyne.CanvasObject) {
 			label := obj.(*widget.Label)
 			i := 0
-			for _, item := range localFileMap {
+			for path, item := range localFileMap {
 				if !item.IsDir {
 					if i == id {
 						label.SetText(fmt.Sprintf("📄 %s (%s)", item.Name, FormatFileSize(item.Size)))
+						// Store path for selection
+						_ = path
 						break
 					}
 					i++
@@ -210,11 +214,27 @@ func makeFileUploadTabIntegrated(state *AppState) *fyne.Container {
 		},
 	)
 
-	// Right side - Remote folder tree (static structure)
+	// Track selected files
+	localList.OnSelected = func(id widget.ListItemID) {
+		i := 0
+		for path, item := range localFileMap {
+			if !item.IsDir {
+				if i == id {
+					selectedLocalFiles = []string{path}
+					break
+				}
+				i++
+			}
+		}
+	}
+
+	// Right side - Remote folder tree (LARGER)
 	remoteFolderList := widget.NewList(
 		func() int { return len(EQFolderStructure) },
 		func() fyne.CanvasObject {
-			return widget.NewLabel("template")
+			label := widget.NewLabel("template")
+			label.TextStyle = fyne.TextStyle{Bold: false}
+			return label
 		},
 		func(id widget.ListItemID, obj fyne.CanvasObject) {
 			label := obj.(*widget.Label)
@@ -226,45 +246,8 @@ func makeFileUploadTabIntegrated(state *AppState) *fyne.Container {
 		},
 	)
 
-	selectedFolder := ""
-	remoteFolderList.OnSelected = func(id widget.ListItemID) {
-		selectedFolder = EQFolderStructure[id]
-	}
-
-	// Add files button
-	addToQueueBtn := widget.NewButton("Add Selected Files to Queue", func() {
-		if !state.connMgr.IsConnected() {
-			dialog.ShowError(fmt.Errorf("not connected to server"), state.mainWindow)
-			return
-		}
-
-		if localRootPath == "" {
-			dialog.ShowError(fmt.Errorf("no local folder selected"), state.mainWindow)
-			return
-		}
-
-		// Add all files from local folder to queue
-		remotePath := state.connMgr.profile.RemotePath
-		added := 0
-
-		for path, item := range localFileMap {
-			if item.IsDir {
-				continue
-			}
-
-			// Determine destination
-			destFolder := selectedFolder
-			if destFolder == "" {
-				destFolder = GetEQFolderForFile(item.Name)
-			}
-
-			remoteDest := filepath.Join(remotePath, destFolder, item.Name)
-			state.uploadQueue.AddFile(path, remoteDest, item.Size)
-			added++
-		}
-
-		dialog.ShowInformation("Queue Updated", fmt.Sprintf("Added %d files to upload queue", added), state.mainWindow)
-	})
+	// Track selected files (not used currently, but kept for future)
+	_ = selectedLocalFiles
 
 	// Upload queue display
 	queueLabel := widget.NewLabel("Upload Queue: 0 files")
@@ -352,7 +335,53 @@ func makeFileUploadTabIntegrated(state *AppState) *fyne.Container {
 		updateQueueDisplay()
 	})
 
-	// Layout
+	// Click folder to add files to queue (simulating drag-and-drop)
+	remoteFolderList.OnSelected = func(id widget.ListItemID) {
+		if !state.connMgr.IsConnected() {
+			dialog.ShowError(fmt.Errorf("not connected to server"), state.mainWindow)
+			remoteFolderList.UnselectAll()
+			return
+		}
+
+		if localRootPath == "" {
+			dialog.ShowError(fmt.Errorf("select local folder first"), state.mainWindow)
+			remoteFolderList.UnselectAll()
+			return
+		}
+
+		destFolder := EQFolderStructure[id]
+		remotePath := state.connMgr.profile.RemotePath
+
+		// Add all files from local folder to this destination
+		added := 0
+		for path, item := range localFileMap {
+			if item.IsDir {
+				continue
+			}
+
+			remoteDest := filepath.Join(remotePath, destFolder, item.Name)
+			state.uploadQueue.AddFile(path, remoteDest, item.Size)
+			added++
+		}
+
+		if added > 0 {
+			updateQueueDisplay()
+			// Show brief confirmation
+			statusMsg := fmt.Sprintf("✓ Added %d files to %s", added, destFolder)
+			if destFolder == "" {
+				statusMsg = fmt.Sprintf("✓ Added %d files to Root", added)
+			}
+			dialog.ShowInformation("Files Added", statusMsg, state.mainWindow)
+		}
+
+		remoteFolderList.UnselectAll()
+	}
+
+	// Instructions
+	instructionsLabel := widget.NewLabel("💡 How to use: 1. Connect to server  2. Select local folder  3. Click a folder on the right to add ALL files to that destination  4. Upload!")
+	instructionsLabel.Wrapping = fyne.TextWrapWord
+
+	// Layout - MUCH BIGGER PANELS
 	leftPanel := container.NewBorder(
 		container.NewVBox(
 			localPathLabel,
@@ -362,27 +391,33 @@ func makeFileUploadTabIntegrated(state *AppState) *fyne.Container {
 		container.NewScroll(localList),
 	)
 
+	remoteHeaderLabel := widget.NewLabel("📁 Remote EQ Folders - Click to add all files")
+	remoteHeaderLabel.TextStyle = fyne.TextStyle{Bold: true}
+
 	rightPanel := container.NewBorder(
-		container.NewVBox(
-			widget.NewLabel("Select Destination Folder (from EQ structure)"),
-			widget.NewLabel("Click a folder, then click 'Add Files to Queue'"),
-		),
-		addToQueueBtn,
-		nil, nil,
+		remoteHeaderLabel,
+		nil, nil, nil,
 		container.NewScroll(remoteFolderList),
 	)
 
-	topSplit := container.NewHSplit(leftPanel, rightPanel)
-	topSplit.Offset = 0.5
+	// Give 70% space to file browsers, 30% to queue
+	fileBrowsers := container.NewHSplit(leftPanel, rightPanel)
+	fileBrowsers.Offset = 0.5
 
-	queuePanel := container.NewBorder(
-		container.NewVBox(queueLabel, uploadProgress),
+	// Compact queue panel at bottom
+	queuePanel := container.NewVBox(
+		instructionsLabel,
+		widget.NewSeparator(),
+		container.NewHBox(queueLabel, uploadProgress),
 		container.NewHBox(uploadBtn, pauseBtn, clearQueueBtn),
-		nil, nil,
 		container.NewScroll(queueList),
 	)
 
-	return container.NewBorder(topSplit, queuePanel, nil, nil, container.NewVBox())
+	// Main layout: big browsers on top, small queue at bottom
+	mainSplit := container.NewVSplit(fileBrowsers, queuePanel)
+	mainSplit.Offset = 0.7 // 70% for browsers, 30% for queue
+
+	return container.NewMax(mainSplit)
 }
 
 // makeNewsEditorTabIntegrated creates the news editor tab with working functionality
