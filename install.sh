@@ -80,7 +80,7 @@ echo "  ✓ Tools built successfully"
 # Set up patch directory
 echo ""
 echo "📁 Setting up patch directory..."
-PATCH_DIR="/var/www/eq-patches"
+PATCH_DIR="/var/www/html/eq-patches"
 
 if [ -d "$PATCH_DIR" ]; then
     echo "  ⚠️  Directory $PATCH_DIR already exists"
@@ -138,9 +138,11 @@ server {
     listen 80;
     server_name _;
 
-    # EQ Patcher endpoint
-    location /patches {
-        alias /var/www/eq-patches;
+    root /var/www/html;
+    index index.html index.htm;
+
+    # EQ Patcher files at /eq-patches/
+    location /eq-patches/ {
         autoindex off;
 
         # CORS headers for web-based patchers
@@ -151,25 +153,6 @@ server {
 
         # Security headers
         add_header X-Content-Type-Options nosniff;
-    }
-
-    # Client bundle download (recommended)
-    location /download/eq-patcher-client.zip {
-        alias /var/www/eq-patches/eq-patcher-client.zip;
-        add_header Content-Disposition "attachment; filename=eq-patcher-client.zip";
-    }
-
-    # Individual file downloads (optional)
-    location /download/LaunchPad.exe {
-        alias /var/www/eq-patches/LaunchPad.exe;
-    }
-
-    location /download/patcher.exe {
-        alias /var/www/eq-patches/patcher.exe;
-    }
-
-    location /download/patcher-config.json {
-        alias /var/www/eq-patches/patcher-config.json;
     }
 }
 EOF
@@ -236,7 +219,7 @@ echo "  ✓ patcher.exe (CLI fallback) copied to $PATCH_DIR"
 # Create sample client config
 cat > "$PATCH_DIR/patcher-config.json" << EOF
 {
-  "server_url": "http://$SERVER_IP/patches",
+  "server_url": "http://$SERVER_IP/eq-patches",
   "server_name": "EverQuest Emulator Server",
   "launcher_title": "EverQuest LaunchPad",
   "website_url": "https://www.yourserver.com",
@@ -285,7 +268,7 @@ echo "✅ Installation Complete!"
 echo "════════════════════════════════════════════════════════"
 echo ""
 echo "📂 Patch Directory: $PATCH_DIR"
-echo "🌐 Patch URL: http://$SERVER_IP/patches"
+echo "🌐 Patch URL: http://$SERVER_IP/eq-patches"
 echo ""
 echo "📋 Next Steps:"
 echo ""
@@ -301,16 +284,16 @@ echo ""
 echo "3️⃣  Distribute to players:"
 echo ""
 echo "   📦 Client Bundle (recommended - all-in-one):"
-echo "      http://$SERVER_IP/download/eq-patcher-client.zip"
+echo "      http://$SERVER_IP/eq-patches/eq-patcher-client.zip"
 echo ""
 echo "   Or individual files:"
-echo "      http://$SERVER_IP/download/LaunchPad.exe"
-echo "      http://$SERVER_IP/download/patcher.exe"
-echo "      http://$SERVER_IP/download/patcher-config.json"
+echo "      http://$SERVER_IP/eq-patches/LaunchPad.exe"
+echo "      http://$SERVER_IP/eq-patches/patcher.exe"
+echo "      http://$SERVER_IP/eq-patches/patcher-config.json"
 echo ""
 echo "📖 Full documentation: README.md"
 echo "🚀 Quick start guide: QUICKSTART.md"
 echo ""
 echo "🧪 Test patch server:"
-echo "   curl http://$SERVER_IP/patches/manifest.json"
+echo "   curl http://$SERVER_IP/eq-patches/manifest.json"
 echo ""

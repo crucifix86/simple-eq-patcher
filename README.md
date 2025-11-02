@@ -15,7 +15,7 @@ Unlike complex patchers with YAML configs and client types, this patcher is **de
 
 ### Server Structure
 ```
-/var/www/eq-patches/
+/var/www/html/eq-patches/
 ├── manifest.json          ← Generated file list with MD5 hashes
 ├── spells_us.txt          ← Files in client root
 ├── dbg.txt
@@ -47,10 +47,10 @@ cd simple-eq-patcher
 ```
 
 **Done!** The installer automatically:
-- Installs Go and nginx
+- Installs Go, nginx, and zip
 - Builds server manifest-builder tool
 - Copies pre-compiled client executables
-- Creates `/var/www/eq-patches`
+- Creates `/var/www/html/eq-patches`
 - Configures nginx
 - Opens firewall port 80
 
@@ -59,7 +59,7 @@ cd simple-eq-patcher
 **⚠️ IMPORTANT:** Only copy files that are **unique to YOUR server** - not the whole EQ client!
 
 ```bash
-cd /var/www/eq-patches
+cd /var/www/html/eq-patches
 
 # Copy ONLY your custom/modified files
 cp /path/to/custom/spells_us.txt .
@@ -83,36 +83,36 @@ cp /path/to/custom/EQUI_*.xml UI/default/
 ### 3. Generate Manifest
 
 ```bash
-cd /var/www/eq-patches
+cd /var/www/html/eq-patches
 ./update-patches.sh
 ```
 
 Output:
 ```
-Scanning directory: /var/www/eq-patches
+Scanning directory: /var/www/html/eq-patches
   Added: spells_us.txt (123456 bytes, md5: a1b2c3d4)
   Added: customzone.eqg (987654 bytes, md5: e5f6g7h8)
 
-✓ Manifest created: /var/www/eq-patches/manifest.json
+✓ Manifest created: /var/www/html/eq-patches/manifest.json
 ✓ Total files: 2
 ```
 
 ### 4. Test Your Patch Server
 
 ```bash
-curl http://YOUR_SERVER_IP/patches/manifest.json
+curl http://YOUR_SERVER_IP/eq-patches/manifest.json
 ```
 
 ### 5. Distribute to Players
 
 **Give players the client bundle (easiest):**
-- Download: `http://YOUR_SERVER_IP/download/eq-patcher-client.zip`
+- Download: `http://YOUR_SERVER_IP/eq-patches/eq-patcher-client.zip`
 - Contains everything they need:
   - `LaunchPad.exe` - GUI launcher
   - `patcher.exe` - CLI fallback
   - `patcher-config.json` - Pre-configured for your server
 
-**Or individual files from `/var/www/eq-patches/`:**
+**Or individual files from `/var/www/html/eq-patches/`:**
 1. `LaunchPad.exe` - GUI launcher (recommended)
 2. `patcher-config.json` - Configuration file
 3. `patcher.exe` - CLI fallback (optional)
@@ -143,7 +143,7 @@ curl http://YOUR_SERVER_IP/patches/manifest.json
 ### When You Update Your Server Files
 
 ```bash
-cd /var/www/eq-patches
+cd /var/www/html/eq-patches
 
 # Copy updated files
 cp /opt/eqemu/server/spells_us.txt .
@@ -157,7 +157,7 @@ cp /opt/eqemu/server/spells_us.txt .
 ### Example: Updated Spells and Added Custom Zone
 
 ```bash
-cd /var/www/eq-patches
+cd /var/www/html/eq-patches
 
 # Updated spells file
 cp /opt/eqemu/server/spells_us.txt .
@@ -199,12 +199,12 @@ Output:
 
 ### One-Time Setup
 1. Run `./install.sh` on your Ubuntu server - **DONE!**
-2. Copy your custom files to `/var/www/eq-patches`
+2. Copy your custom files to `/var/www/html/eq-patches`
 3. Run `./update-patches.sh`
 4. Give `LaunchPad.exe` + `patcher-config.json` to players
 
 ### Daily Updates (When You Change Server Files)
-1. Copy updated files to `/var/www/eq-patches`
+1. Copy updated files to `/var/www/html/eq-patches`
 2. Run `./update-patches.sh`
 3. Players auto-download on next launcher run
 
@@ -271,7 +271,7 @@ Output:
 Edit `patcher-config.json`:
 ```json
 {
-  "server_url": "http://yourserver.com/patches",
+  "server_url": "http://yourserver.com/eq-patches",
   "server_name": "My EverQuest Server",
   "launcher_title": "My Server - LaunchPad",
   "website_url": "https://discord.gg/yourserver",
@@ -325,11 +325,11 @@ if strings.Contains(path, "temp") || strings.HasSuffix(path, ".log") {
 
 **Patcher can't connect:**
 - Check `server_url` in config
-- Test manually: `http://yourserver.com/patches/manifest.json`
+- Test manually: `http://yourserver.com/eq-patches/manifest.json`
 - Check firewall allows port 80/443
 
 **Files not updating:**
-- Regenerate manifest: `manifest-builder /var/www/eq-patches`
+- Regenerate manifest: `manifest-builder /var/www/html/eq-patches`
 - Check file permissions on server
 - Delete local file and re-run patcher
 
@@ -349,7 +349,7 @@ cd simple-eq-patcher
 ./install.sh
 
 # 2. Copy YOUR custom files only
-cd /var/www/eq-patches
+cd /var/www/html/eq-patches
 cp /opt/eqemu/server/spells_us.txt .
 cp /opt/eqemu/server/dbg.txt .
 
@@ -357,13 +357,13 @@ cp /opt/eqemu/server/dbg.txt .
 ./update-patches.sh
 
 # 4. Test it works
-curl http://YOUR_SERVER_IP/patches/manifest.json
+curl http://YOUR_SERVER_IP/eq-patches/manifest.json
 ```
 
 ### Give to Players:
 
-- `LaunchPad.exe` (GUI launcher from `/var/www/eq-patches/LaunchPad.exe`)
-- `patcher-config.json` (from `/var/www/eq-patches/patcher-config.json`)
+- `LaunchPad.exe` (GUI launcher from `/var/www/html/eq-patches/LaunchPad.exe`)
+- `patcher-config.json` (from `/var/www/html/eq-patches/patcher-config.json`)
 - `patcher.exe` (CLI fallback - optional)
 
 Players copy `LaunchPad.exe` and `patcher-config.json` to their `C:\EverQuest\` folder and double-click `LaunchPad.exe`!
@@ -371,7 +371,7 @@ Players copy `LaunchPad.exe` and `patcher-config.json` to their `C:\EverQuest\` 
 ## 📦 Distribution
 
 **Give players ONE file (easiest):**
-- `eq-patcher-client.zip` - Download from `http://YOUR_SERVER_IP/download/eq-patcher-client.zip`
+- `eq-patcher-client.zip` - Download from `http://YOUR_SERVER_IP/eq-patches/eq-patcher-client.zip`
 
 **Contains everything:**
 - `LaunchPad.exe` - Full-featured GUI launcher
