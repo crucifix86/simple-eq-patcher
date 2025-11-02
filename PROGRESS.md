@@ -65,6 +65,7 @@ Custom EverQuest patcher system with GUI launcher and automated patch distributi
 - ✅ Customizable launcher title and server name
 - ✅ Play anyway if patch server unreachable
 - ✅ Bold, larger text for better readability
+- ✅ Obsolete file detection and removal (removes files deleted server-side)
 
 **2. Graphics Settings**
 - Traditional dropdown-based menu
@@ -187,7 +188,7 @@ cp /path/to/custom/zone.eqg .
 8. ✅ Game path issues → Uses launcher directory
 
 ### Current Issues
-- [ ] File downloads use relative paths (needs fix - see below)
+- None known at this time
 
 ---
 
