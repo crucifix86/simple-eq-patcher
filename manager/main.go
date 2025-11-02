@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"path/filepath"
 	"strings"
 
@@ -10,7 +9,6 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -145,108 +143,127 @@ func makeConnectionTabIntegrated(state *AppState) *fyne.Container {
 	return container.NewPadded(form)
 }
 
-// makeFileUploadTabIntegrated creates the file upload tab with working functionality
+// makeFileUploadTabIntegrated creates the file upload tab with tree browsers
 func makeFileUploadTabIntegrated(state *AppState) *fyne.Container {
-	// Left side - local file picker
-	selectedFilesLabel := widget.NewLabel("No files selected")
-	var selectedFiles []string
+	// Local folder browser with tree
+	var localRootPath string
+	var localFileMap map[string]*FileItem
+	localFileMap = make(map[string]*FileItem)
 
-	selectFilesBtn := widget.NewButton("Select Files to Upload", func() {
-		fd := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
-			if err != nil || reader == nil {
-				return
-			}
-			defer reader.Close()
+	localPathLabel := widget.NewLabel("Local Folder: (not selected)")
 
-			filePath := reader.URI().Path()
-			selectedFiles = append(selectedFiles, filePath)
-			selectedFilesLabel.SetText(fmt.Sprintf("%d file(s) selected", len(selectedFiles)))
-		}, state.mainWindow)
-
-		fd.SetFilter(storage.NewExtensionFileFilter([]string{".txt", ".xml", ".tga", ".s3d", ".eqg", ".eff", ".wav"}))
-		fd.Show()
-	})
-
-	selectFolderBtn := widget.NewButton("Select Folder", func() {
-		fd := dialog.NewFolderOpen(func(uri fyne.ListableURI, err error) {
+	selectLocalFolderBtn := widget.NewButton("Select Local Folder", func() {
+		dialog.ShowFolderOpen(func(uri fyne.ListableURI, err error) {
 			if err != nil || uri == nil {
 				return
 			}
 
-			folderPath := uri.Path()
-			files, err := GetLocalFiles(folderPath)
+			localRootPath = uri.Path()
+			localPathLabel.SetText("Local Folder: " + filepath.Base(localRootPath))
+
+			// Scan local files
+			files, err := GetLocalFiles(localRootPath)
 			if err != nil {
 				dialog.ShowError(err, state.mainWindow)
 				return
 			}
 
-			// Flatten file tree
-			var addFiles func(*FileItem)
-			addFiles = func(item *FileItem) {
-				if !item.IsDir {
-					selectedFiles = append(selectedFiles, item.Path)
-				}
+			// Build file map
+			localFileMap = make(map[string]*FileItem)
+			var buildMap func(*FileItem, string)
+			buildMap = func(item *FileItem, path string) {
+				localFileMap[path] = item
 				for _, child := range item.Children {
-					addFiles(child)
+					childPath := filepath.Join(path, child.Name)
+					buildMap(child, childPath)
 				}
 			}
-			addFiles(files)
-
-			selectedFilesLabel.SetText(fmt.Sprintf("%d file(s) selected from folder", len(selectedFiles)))
+			buildMap(files, localRootPath)
 		}, state.mainWindow)
-
-		fd.Show()
 	})
 
-	clearSelectionBtn := widget.NewButton("Clear Selection", func() {
-		selectedFiles = []string{}
-		selectedFilesLabel.SetText("No files selected")
-	})
+	localList := widget.NewList(
+		func() int {
+			count := 0
+			for _, item := range localFileMap {
+				if !item.IsDir {
+					count++
+				}
+			}
+			return count
+		},
+		func() fyne.CanvasObject {
+			return widget.NewLabel("template")
+		},
+		func(id widget.ListItemID, obj fyne.CanvasObject) {
+			label := obj.(*widget.Label)
+			i := 0
+			for _, item := range localFileMap {
+				if !item.IsDir {
+					if i == id {
+						label.SetText(fmt.Sprintf("📄 %s (%s)", item.Name, FormatFileSize(item.Size)))
+						break
+					}
+					i++
+				}
+			}
+		},
+	)
 
-	// Right side - EQ folder structure
-	folderSelect := widget.NewSelect(EQFolderStructure, nil)
-	folderSelect.SetSelected("")
-	folderSelect.PlaceHolder = "Select destination folder..."
+	// Right side - Remote folder tree (static structure)
+	remoteFolderList := widget.NewList(
+		func() int { return len(EQFolderStructure) },
+		func() fyne.CanvasObject {
+			return widget.NewLabel("template")
+		},
+		func(id widget.ListItemID, obj fyne.CanvasObject) {
+			label := obj.(*widget.Label)
+			folder := EQFolderStructure[id]
+			if folder == "" {
+				folder = "/ (Root)"
+			}
+			label.SetText(fmt.Sprintf("📁 %s", folder))
+		},
+	)
 
-	folderHelpLabel := widget.NewLabel("Files will be automatically placed in the correct folder based on their extension")
-	folderHelpLabel.Wrapping = fyne.TextWrapWord
+	selectedFolder := ""
+	remoteFolderList.OnSelected = func(id widget.ListItemID) {
+		selectedFolder = EQFolderStructure[id]
+	}
 
-	// Add to queue button
-	addToQueueBtn := widget.NewButton("Add to Upload Queue", func() {
+	// Add files button
+	addToQueueBtn := widget.NewButton("Add Selected Files to Queue", func() {
 		if !state.connMgr.IsConnected() {
 			dialog.ShowError(fmt.Errorf("not connected to server"), state.mainWindow)
 			return
 		}
 
-		if len(selectedFiles) == 0 {
-			dialog.ShowError(fmt.Errorf("no files selected"), state.mainWindow)
+		if localRootPath == "" {
+			dialog.ShowError(fmt.Errorf("no local folder selected"), state.mainWindow)
 			return
 		}
 
+		// Add all files from local folder to queue
 		remotePath := state.connMgr.profile.RemotePath
+		added := 0
 
-		for _, localPath := range selectedFiles {
-			// Determine destination folder
-			destFolder := folderSelect.Selected
-			if destFolder == "" {
-				destFolder = GetEQFolderForFile(filepath.Base(localPath))
-			}
-
-			remoteDest := filepath.Join(remotePath, destFolder, filepath.Base(localPath))
-
-			// Get file size
-			info, err := ioutil.ReadFile(localPath)
-			if err != nil {
+		for path, item := range localFileMap {
+			if item.IsDir {
 				continue
 			}
 
-			state.uploadQueue.AddFile(localPath, remoteDest, int64(len(info)))
+			// Determine destination
+			destFolder := selectedFolder
+			if destFolder == "" {
+				destFolder = GetEQFolderForFile(item.Name)
+			}
+
+			remoteDest := filepath.Join(remotePath, destFolder, item.Name)
+			state.uploadQueue.AddFile(path, remoteDest, item.Size)
+			added++
 		}
 
-		selectedFiles = []string{}
-		selectedFilesLabel.SetText("No files selected")
-
-		dialog.ShowInformation("Queue Updated", fmt.Sprintf("Added %d files to upload queue", len(selectedFiles)), state.mainWindow)
+		dialog.ShowInformation("Queue Updated", fmt.Sprintf("Added %d files to upload queue", added), state.mainWindow)
 	})
 
 	// Upload queue display
@@ -335,25 +352,24 @@ func makeFileUploadTabIntegrated(state *AppState) *fyne.Container {
 		updateQueueDisplay()
 	})
 
+	// Layout
 	leftPanel := container.NewBorder(
 		container.NewVBox(
-			widget.NewLabel("Select Files"),
-			selectedFilesLabel,
-			container.NewHBox(selectFilesBtn, selectFolderBtn, clearSelectionBtn),
+			localPathLabel,
+			selectLocalFolderBtn,
 		),
 		nil, nil, nil,
-		container.NewVBox(),
+		container.NewScroll(localList),
 	)
 
 	rightPanel := container.NewBorder(
 		container.NewVBox(
-			widget.NewLabel("Destination Folder (optional)"),
-			folderSelect,
-			folderHelpLabel,
-			addToQueueBtn,
+			widget.NewLabel("Select Destination Folder (from EQ structure)"),
+			widget.NewLabel("Click a folder, then click 'Add Files to Queue'"),
 		),
-		nil, nil, nil,
-		container.NewVBox(),
+		addToQueueBtn,
+		nil, nil,
+		container.NewScroll(remoteFolderList),
 	)
 
 	topSplit := container.NewHSplit(leftPanel, rightPanel)
