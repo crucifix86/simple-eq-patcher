@@ -90,16 +90,17 @@ func main() {
 	serverLabel.TextSize = 14
 	serverLabel.Alignment = fyne.TextAlignCenter
 
-	statusLabel = widget.NewLabel("Ready to play")
+	statusLabel = widget.NewLabel("Initializing...")
 	statusLabel.Alignment = fyne.TextAlignCenter
 
 	progressBar = widget.NewProgressBar()
 	progressBar.Hide()
 
 	playButton = widget.NewButton("PLAY", func() {
-		go performPatchAndLaunch(myWindow)
+		go launchGameOnly(myWindow)
 	})
 	playButton.Importance = widget.HighImportance
+	playButton.Disable() // Disabled until update check completes
 
 	exitButton = widget.NewButton("Exit", func() {
 		myApp.Quit()
@@ -171,7 +172,125 @@ func main() {
 	myWindow.Resize(fyne.NewSize(600, 400))
 	myWindow.SetFixedSize(true)
 	myWindow.CenterOnScreen()
+
+	// Check for updates on startup
+	go checkForUpdatesOnStartup(myWindow)
+
 	myWindow.ShowAndRun()
+}
+
+func checkForUpdatesOnStartup(win fyne.Window) {
+	statusLabel.SetText("Checking for updates...")
+	progressBar.Show()
+	progressBar.SetValue(0)
+
+	// Download manifest
+	manifest, err := downloadManifest(config.ServerURL)
+	if err != nil {
+		// Can't connect - allow playing anyway
+		statusLabel.SetText("⚠️ Update check failed - Ready to play")
+		progressBar.Hide()
+		playButton.Enable()
+		return
+	}
+
+	statusLabel.SetText("Checking files...")
+	progressBar.SetValue(0.3)
+
+	// Check which files need updating
+	toDownload := []FileEntry{}
+	for _, file := range manifest.Files {
+		localPath := file.Path
+
+		// Check if file exists
+		info, err := os.Stat(localPath)
+		if os.IsNotExist(err) {
+			toDownload = append(toDownload, file)
+			continue
+		}
+
+		// Check size and hash
+		if info.Size() != file.Size {
+			toDownload = append(toDownload, file)
+			continue
+		}
+
+		localMD5, err := calculateMD5(localPath)
+		if err != nil || localMD5 != file.MD5 {
+			toDownload = append(toDownload, file)
+			continue
+		}
+	}
+
+	progressBar.Hide()
+
+	if len(toDownload) > 0 {
+		// Updates available - ask user
+		statusLabel.SetText(fmt.Sprintf("📦 %d update(s) available", len(toDownload)))
+
+		dialog.ShowConfirm(
+			"Updates Available",
+			fmt.Sprintf("%d file(s) need to be updated.\n\nWould you like to download updates now?\n\n(You can also play without updating)", len(toDownload)),
+			func(update bool) {
+				if update {
+					// Download updates
+					go performUpdate(win, toDownload)
+				} else {
+					// Skip updates
+					statusLabel.SetText("✓ Ready to play (updates skipped)")
+					playButton.Enable()
+				}
+			},
+			win,
+		)
+	} else {
+		// No updates needed
+		statusLabel.SetText("✓ Up to date - Ready to play")
+		playButton.Enable()
+	}
+}
+
+func performUpdate(win fyne.Window, toDownload []FileEntry) {
+	playButton.Disable()
+	statusLabel.SetText(fmt.Sprintf("📥 Downloading %d file(s)...", len(toDownload)))
+	progressBar.Show()
+	progressBar.SetValue(0)
+
+	for i, file := range toDownload {
+		progress := float64(i) / float64(len(toDownload))
+		progressBar.SetValue(progress)
+		statusLabel.SetText(fmt.Sprintf("📥 Downloading %s (%d/%d)", filepath.Base(file.Path), i+1, len(toDownload)))
+
+		err := downloadFile(config.ServerURL, file.Path)
+		if err != nil {
+			statusLabel.SetText("⚠️ Download failed")
+			progressBar.Hide()
+			showError(win, fmt.Sprintf("Failed to download %s: %v", file.Path, err))
+			playButton.Enable()
+			return
+		}
+	}
+
+	progressBar.SetValue(1.0)
+	statusLabel.SetText("✓ All files updated - Ready to play")
+	progressBar.Hide()
+	playButton.Enable()
+}
+
+func launchGameOnly(win fyne.Window) {
+	playButton.Disable()
+	statusLabel.SetText("🎮 Launching EverQuest...")
+
+	err := launchGame(config)
+	if err != nil {
+		showError(win, fmt.Sprintf("Failed to launch game: %v", err))
+		playButton.Enable()
+		statusLabel.SetText("Ready to play")
+		return
+	}
+
+	// Exit launcher
+	os.Exit(0)
 }
 
 func performPatchAndLaunch(win fyne.Window) {
