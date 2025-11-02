@@ -69,20 +69,33 @@ This pulls latest from git and rebuilds everything automatically!
 The installer automatically creates the **actual EverQuest RoF2 directory structure**:
 ```
 /var/www/html/eq-patches/
-├── ActorEffects/        ← Actor effect files
+├── ActorEffects/            ← Actor effect files
 ├── Atlas/
+│   └── Default/
 ├── AudioTriggers/
+│   ├── default/
+│   └── shared/
 ├── EnvEmitterEffects/
-├── Resources/           ← Zone files (.s3d, .eqg)
+├── Resources/               ← Zone files (.s3d, .eqg)
+│   ├── Precipitation/
+│   ├── Sky/
+│   ├── SlideShow/
+│   └── WaterSwap/
 ├── RenderEffects/
-├── SpellEffects/        ← Spell effect files
-├── help/                ← Help files
-├── maps/                ← Map files (.txt)
-├── sounds/              ← Sound files
+│   ├── MPL/                 ← Multi-pass lighting
+│   └── SPL/                 ← Single-pass lighting
+├── SpellEffects/            ← Spell effect files
+├── help/                    ← Help files
+│   └── tips/
+├── maps/                    ← Map files (.txt)
+├── sounds/                  ← Sound files
 ├── storyline/
-├── uifiles/             ← UI files (EQUI_*.xml, *.tga)
+├── uifiles/                 ← UI files (EQUI_*.xml, *.tga)
+│   └── default/
 ├── userdata/
-└── README.txt           ← Instructions
+├── voice/
+│   └── default/
+└── README.txt               ← Instructions
 ```
 
 **Examples:**

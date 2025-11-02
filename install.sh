@@ -120,19 +120,26 @@ echo ""
 echo "📁 Creating EverQuest RoF2 directory structure..."
 
 # Create all directories that exist in actual EverQuest RoF2 client
+# Top-level directories
 mkdir -p "$PATCH_DIR/ActorEffects"
-mkdir -p "$PATCH_DIR/Atlas"
-mkdir -p "$PATCH_DIR/AudioTriggers"
+mkdir -p "$PATCH_DIR/Atlas/Default"
+mkdir -p "$PATCH_DIR/AudioTriggers/default"
+mkdir -p "$PATCH_DIR/AudioTriggers/shared"
 mkdir -p "$PATCH_DIR/EnvEmitterEffects"
-mkdir -p "$PATCH_DIR/Resources"
-mkdir -p "$PATCH_DIR/RenderEffects"
+mkdir -p "$PATCH_DIR/RenderEffects/MPL"
+mkdir -p "$PATCH_DIR/RenderEffects/SPL"
+mkdir -p "$PATCH_DIR/Resources/Precipitation"
+mkdir -p "$PATCH_DIR/Resources/Sky"
+mkdir -p "$PATCH_DIR/Resources/SlideShow"
+mkdir -p "$PATCH_DIR/Resources/WaterSwap"
 mkdir -p "$PATCH_DIR/SpellEffects"
-mkdir -p "$PATCH_DIR/help"
+mkdir -p "$PATCH_DIR/help/tips"
 mkdir -p "$PATCH_DIR/maps"
 mkdir -p "$PATCH_DIR/sounds"
 mkdir -p "$PATCH_DIR/storyline"
-mkdir -p "$PATCH_DIR/uifiles"
+mkdir -p "$PATCH_DIR/uifiles/default"
 mkdir -p "$PATCH_DIR/userdata"
+mkdir -p "$PATCH_DIR/voice/default"
 
 # Create main README
 cat > "$PATCH_DIR/README.txt" << 'EOF'
@@ -145,12 +152,20 @@ Place your custom/modified files in the matching directories.
 Common directories:
 /                      - Root files (spells_us.txt, dbg.txt, etc.)
 /Resources/            - Zone files (.s3d, .eqg archives)
+  /Resources/Sky/      - Sky textures
+  /Resources/Precipitation/  - Weather effects
 /uifiles/              - UI files (EQUI_*.xml, *.tga, *.dds)
+  /uifiles/default/    - Default UI skin
 /maps/                 - Map files (.txt)
 /sounds/               - Sound files
 /SpellEffects/         - Spell effect files
 /ActorEffects/         - Actor effect files
+/RenderEffects/        - Render effects
+  /RenderEffects/MPL/  - Multi-pass lighting
+  /RenderEffects/SPL/  - Single-pass lighting
+/AudioTriggers/        - Audio trigger files
 /help/                 - Help files
+/voice/                - Voice files
 
 After adding files, run:
   ./update-patches.sh
@@ -165,18 +180,19 @@ EOF
 
 echo "  ✓ Created EverQuest RoF2 directory structure:"
 echo "    - ActorEffects/"
-echo "    - Atlas/"
-echo "    - AudioTriggers/"
+echo "    - Atlas/Default/"
+echo "    - AudioTriggers/default/, AudioTriggers/shared/"
 echo "    - EnvEmitterEffects/"
-echo "    - Resources/"
-echo "    - RenderEffects/"
+echo "    - RenderEffects/MPL/, RenderEffects/SPL/"
+echo "    - Resources/Precipitation/, Resources/Sky/, Resources/SlideShow/, Resources/WaterSwap/"
 echo "    - SpellEffects/"
-echo "    - help/"
+echo "    - help/tips/"
 echo "    - maps/"
 echo "    - sounds/"
 echo "    - storyline/"
-echo "    - uifiles/"
+echo "    - uifiles/default/"
 echo "    - userdata/"
+echo "    - voice/default/"
 
 # Copy manifest builder to patch directory
 echo ""
