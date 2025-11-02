@@ -62,8 +62,15 @@ var (
 func main() {
 	myApp := app.New()
 
+	// Get launcher directory and change to it
+	// This ensures all file operations happen in the correct location
+	exePath, err := os.Executable()
+	if err == nil {
+		launcherDir := filepath.Dir(exePath)
+		os.Chdir(launcherDir)
+	}
+
 	// Load configuration first to get launcher title
-	var err error
 	config, err = loadConfig()
 	if err != nil {
 		config = createDefaultConfig()

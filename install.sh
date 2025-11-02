@@ -115,6 +115,52 @@ if [ "$EUID" -ne 0 ]; then
 fi
 echo "  ✓ Patch directory: $PATCH_DIR"
 
+# Create EverQuest directory structure
+echo ""
+echo "📁 Creating EverQuest directory structure..."
+mkdir -p "$PATCH_DIR/UI/default"
+mkdir -p "$PATCH_DIR/Resources"
+mkdir -p "$PATCH_DIR/Maps"
+mkdir -p "$PATCH_DIR/Sounds"
+mkdir -p "$PATCH_DIR/Music"
+
+# Create README files to explain each directory
+cat > "$PATCH_DIR/README.txt" << 'EOF'
+EverQuest Patch Directory Structure
+====================================
+
+Place your custom files in the appropriate directories:
+
+/                       - Root level files (spells_us.txt, dbg.txt, etc.)
+/UI/default/           - UI files (EQUI_*.xml)
+/Resources/            - Resource files (.s3d, .eqg archives)
+/Maps/                 - Map files
+/Sounds/               - Custom sound files
+/Music/                - Custom music files
+
+After adding files, run: ./update-patches.sh
+
+This will regenerate manifest.json with all your files.
+Players will automatically download them when they run the launcher.
+EOF
+
+cat > "$PATCH_DIR/UI/default/README.txt" << 'EOF'
+Place custom UI XML files here
+Example: EQUI_Inventory.xml, EQUI_PlayerWindow.xml, etc.
+EOF
+
+cat > "$PATCH_DIR/Resources/README.txt" << 'EOF'
+Place custom resource files here
+Example: zone files (.eqg), texture archives (.s3d), etc.
+EOF
+
+echo "  ✓ Created standard EverQuest directories:"
+echo "    - UI/default/ (for UI files)"
+echo "    - Resources/ (for .eqg, .s3d files)"
+echo "    - Maps/ (for map files)"
+echo "    - Sounds/ (for custom sounds)"
+echo "    - Music/ (for custom music)"
+
 # Copy manifest builder to patch directory
 echo ""
 echo "📋 Installing manifest builder..."

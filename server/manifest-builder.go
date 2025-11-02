@@ -48,8 +48,13 @@ func main() {
 			return err
 		}
 
-		// Skip directories and the manifest file itself
-		if info.IsDir() || filepath.Base(path) == "manifest.json" {
+		// Skip directories, manifest, update script, and README files
+		baseName := filepath.Base(path)
+		if info.IsDir() ||
+		   baseName == "manifest.json" ||
+		   baseName == "update-patches.sh" ||
+		   baseName == "manifest-builder" ||
+		   baseName == "README.txt" {
 			return nil
 		}
 

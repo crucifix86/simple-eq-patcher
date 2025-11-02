@@ -66,20 +66,35 @@ This pulls latest from git and rebuilds everything automatically!
 
 **⚠️ IMPORTANT:** Only copy files that are **unique to YOUR server** - not the whole EQ client!
 
+The installer automatically creates this directory structure:
+```
+/var/www/html/eq-patches/
+├── UI/default/          ← UI files go here
+├── Resources/           ← Zone files, archives go here
+├── Maps/                ← Map files go here
+├── Sounds/              ← Custom sounds go here
+├── Music/               ← Custom music go here
+└── README.txt           ← Instructions
+```
+
+**Examples:**
+
 ```bash
 cd /var/www/html/eq-patches
 
-# Copy ONLY your custom/modified files
+# Root level files (spells, database, etc.)
 cp /path/to/custom/spells_us.txt .
 cp /path/to/custom/dbg.txt .
 
-# Custom zones (only ones you added/modified)
-cp /path/to/custom/customzone.eqg .
-cp /path/to/custom/customzone_chr.txt .
-
-# Custom UI files (maintain directory structure)
-mkdir -p UI/default
+# UI files - already have UI/default/ folder!
 cp /path/to/custom/EQUI_*.xml UI/default/
+
+# Zone files - already have Resources/ folder!
+cp /path/to/custom/customzone.eqg Resources/
+cp /path/to/custom/customzone.s3d Resources/
+
+# Map files - already have Maps/ folder!
+cp /path/to/maps/*.txt Maps/
 ```
 
 **What NOT to copy:**
