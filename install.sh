@@ -7,11 +7,13 @@ echo "  Simple EQ Patcher - Ubuntu 24.04 Server Installation"
 echo "════════════════════════════════════════════════════════"
 echo ""
 
-# Check if running as root
+# Determine if we need sudo
 if [ "$EUID" -eq 0 ]; then
-   echo "⚠️  Please run as regular user, not root"
-   echo "   The script will ask for sudo when needed"
-   exit 1
+   SUDO=""
+   echo "🔑 Running as root"
+else
+   SUDO="sudo"
+   echo "🔑 Running as regular user (will use sudo when needed)"
 fi
 
 # Check Ubuntu version
@@ -31,15 +33,15 @@ echo ""
 echo "📦 Installing dependencies..."
 if ! command -v go &> /dev/null; then
     echo "  Installing Go..."
-    sudo apt-get update
-    sudo apt-get install -y golang-go
+    $SUDO apt-get update
+    $SUDO apt-get install -y golang-go
 else
     echo "  ✓ Go already installed: $(go version)"
 fi
 
 if ! command -v nginx &> /dev/null; then
     echo "  Installing nginx..."
-    sudo apt-get install -y nginx
+    $SUDO apt-get install -y nginx
 else
     echo "  ✓ nginx already installed"
 fi
@@ -66,14 +68,17 @@ if [ -d "$PATCH_DIR" ]; then
     read -p "  Keep existing files? (Y/n) " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Nn]$ ]]; then
-        sudo rm -rf "$PATCH_DIR"
-        sudo mkdir -p "$PATCH_DIR"
+        $SUDO rm -rf "$PATCH_DIR"
+        $SUDO mkdir -p "$PATCH_DIR"
     fi
 else
-    sudo mkdir -p "$PATCH_DIR"
+    $SUDO mkdir -p "$PATCH_DIR"
 fi
 
-sudo chown $USER:$USER "$PATCH_DIR"
+# Set ownership (only if not root)
+if [ "$EUID" -ne 0 ]; then
+    $SUDO chown $USER:$USER "$PATCH_DIR"
+fi
 echo "  ✓ Patch directory: $PATCH_DIR"
 
 # Copy manifest builder to patch directory
@@ -109,7 +114,7 @@ if [ -f "$NGINX_CONF" ]; then
 fi
 
 if [ -z "$SKIP_NGINX" ]; then
-    sudo tee "$NGINX_CONF" > /dev/null << 'EOF'
+    $SUDO tee "$NGINX_CONF" > /dev/null << 'EOF'
 server {
     listen 80;
     server_name _;
@@ -146,16 +151,16 @@ EOF
 
     # Enable site
     if [ ! -L "/etc/nginx/sites-enabled/eq-patcher" ]; then
-        sudo ln -sf "$NGINX_CONF" /etc/nginx/sites-enabled/
+        $SUDO ln -sf "$NGINX_CONF" /etc/nginx/sites-enabled/
     fi
 
     # Test nginx config
-    if sudo nginx -t 2>/dev/null; then
-        sudo systemctl reload nginx
+    if $SUDO nginx -t 2>/dev/null; then
+        $SUDO systemctl reload nginx
         echo "  ✓ nginx configured and reloaded"
     else
         echo "  ✗ nginx configuration error"
-        echo "  Check: sudo nginx -t"
+        echo "  Check: nginx -t"
         exit 1
     fi
 fi
@@ -164,12 +169,12 @@ fi
 echo ""
 echo "🔥 Checking firewall..."
 if command -v ufw &> /dev/null; then
-    if sudo ufw status | grep -q "Status: active"; then
-        if ! sudo ufw status | grep -q "80/tcp"; then
+    if $SUDO ufw status | grep -q "Status: active"; then
+        if ! $SUDO ufw status | grep -q "80/tcp"; then
             read -p "  Open port 80 in firewall? (Y/n) " -n 1 -r
             echo
             if [[ ! $REPLY =~ ^[Nn]$ ]]; then
-                sudo ufw allow 80/tcp
+                $SUDO ufw allow 80/tcp
                 echo "  ✓ Port 80 opened"
             fi
         else
