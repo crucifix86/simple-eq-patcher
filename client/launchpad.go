@@ -112,7 +112,7 @@ func main() {
 
 	// Website button (if configured)
 	var websiteButton *widget.Button
-	if config.WebsiteURL != "" && config.WebsiteURL != "https://www.example.com" {
+	if config.WebsiteURL != "" {
 		buttonLabel := config.WebsiteLabel
 		if buttonLabel == "" {
 			buttonLabel = "Visit Website"
@@ -127,11 +127,14 @@ func main() {
 	// - PLAY button on left
 	// - Website button (if configured) on left before Exit
 	// - Exit button at bottom left
+	// Add spacing between buttons for better visual layout
 	leftButtons := container.NewVBox(
 		playButton,
+		layout.NewSpacer(),
 	)
 	if websiteButton != nil {
 		leftButtons.Add(websiteButton)
+		leftButtons.Add(layout.NewSpacer())
 	}
 	leftButtons.Add(exitButton)
 

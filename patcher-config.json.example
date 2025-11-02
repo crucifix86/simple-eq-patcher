@@ -1,0 +1,9 @@
+{
+  "server_url": "http://your-server-ip/patches",
+  "server_name": "My EverQuest Server",
+  "launcher_title": "My Server - LaunchPad",
+  "website_url": "https://discord.gg/yourserver",
+  "website_label": "Join Discord",
+  "game_exe": "eqgame.exe",
+  "game_args": "patchme"
+}

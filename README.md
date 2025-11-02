@@ -111,17 +111,21 @@ curl http://YOUR_SERVER_IP/patches/manifest.json
 
 **Player instructions:**
 1. Copy `LaunchPad.exe` and `patcher-config.json` to their EverQuest folder (same folder as `eqgame.exe`)
-2. Double-click `LaunchPad.exe`
-3. Click "PLAY" button to patch and launch game
-4. Use "Graphics Settings" button to configure display options
-5. Click website button (if configured) to visit server website
+2. Edit `patcher-config.json` to customize server name, website button, and launcher title
+3. Double-click `LaunchPad.exe`
+4. Click "PLAY" button to patch and launch game
+5. Use "Graphics Settings" button to configure display options
+6. Click "Compatibility Fix Wizard" if having fullscreen/DPI issues
+7. Click website button to visit server Discord/forums
 
 **Features:**
 - ✅ Auto-patching with progress bar
-- ✅ Graphics Settings (guided setup or manual INI edit)
-- ✅ Configurable website button
-- ✅ Customizable launcher title
+- ✅ Graphics Settings with resolution, texture quality, effects
+- ✅ Compatibility Fix Wizard (fixes fullscreen/DPI issues on modern Windows)
+- ✅ Configurable website button (Discord, forums, etc.)
+- ✅ Customizable launcher title and server name
 - ✅ EverQuest-themed UI with background image
+- ✅ Clean button layout with proper spacing
 
 **Note:** `LaunchPad.exe` is a full-featured GUI application. If players have issues, they can use the CLI `patcher.exe` instead.
 
@@ -247,14 +251,36 @@ Output:
 
 ## 🛠️ Advanced Configuration
 
-### Custom Game Launch Arguments
+### Customizing the Launcher
 
 Edit `patcher-config.json`:
 ```json
 {
   "server_url": "http://yourserver.com/patches",
+  "server_name": "My EverQuest Server",
+  "launcher_title": "My Server - LaunchPad",
+  "website_url": "https://discord.gg/yourserver",
+  "website_label": "Join Discord",
   "game_exe": "eqgame.exe",
-  "game_args": "patchme /login:loginserver.com"
+  "game_args": "patchme"
+}
+```
+
+**Configuration Options:**
+- `server_url` - Patch server URL (where manifest.json is located)
+- `server_name` - Displayed in launcher (under EverQuest title)
+- `launcher_title` - Window title for the launcher
+- `website_url` - URL for the website button (Discord, forums, etc.)
+- `website_label` - Text shown on website button
+- `game_exe` - Game executable name (usually eqgame.exe)
+- `game_args` - Launch arguments (e.g., "patchme" or "patchme /login:loginserver.com")
+
+### Custom Game Launch Arguments
+
+For custom login servers:
+```json
+{
+  "game_args": "patchme /login:loginserver.myserver.com"
 }
 ```
 
@@ -344,19 +370,42 @@ C:\EverQuest\
 
 **LaunchPad Features:**
 - ✨ Auto-patching with progress bar
-- 🎮 Graphics Settings button (guided + manual)
-- 🌐 Configurable website button
-- 🎨 EverQuest-themed UI
-- 🔧 Customizable branding
+- 🎮 Graphics Settings (resolution, textures, effects, shaders)
+- 🔧 Compatibility Fix Wizard (DPI/fullscreen issues)
+- 🌐 Configurable website button (Discord/forums)
+- 🎨 EverQuest-themed UI with background
+- 🏷️ Customizable server branding
+- 📐 Clean layout with proper button spacing
 
 Just double-click `LaunchPad.exe` to patch and play!
 
 ## 🎮 Player Features
 
-See [FEATURES.md](FEATURES.md) for detailed feature documentation including:
-- Graphics Settings configuration guide
-- INI file editing
-- Customization options
+### Graphics Settings Menu
+- **Resolution Selector**: Common resolutions from 800x600 to 4K
+- **Fullscreen Toggle**: Enable/disable fullscreen mode
+- **Texture Quality**: Low, Medium, High, Ultra
+- **Spell Effects**: Off, Low, Medium, High
+- **Advanced Options**: Grass, Dynamic Lighting, Vertex/Pixel Shaders
+- **Reset to Defaults**: One-click restoration of recommended settings
+
+### Compatibility Fix Wizard
+Having issues with fullscreen or DPI scaling on modern Windows? The Compatibility Fix Wizard can help!
+
+**Full Compatibility (Best for Fullscreen)**
+- Disables DX Maximized Windowed Mode
+- Sets DPI Unaware mode (prevents scaling)
+- Enables High DPI Aware flag
+- Best for traditional fullscreen gaming
+
+**DPI Awareness Only (Best for Windowed)**
+- Enables High DPI Aware flag only
+- Works best with borderless windowed mode
+- Less aggressive than full compatibility
+
+**Remove All Settings**
+- Restores Windows default behavior
+- Use if compatibility fixes cause issues
 
 ## 🔐 Security Notes
 
