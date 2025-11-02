@@ -66,14 +66,22 @@ This pulls latest from git and rebuilds everything automatically!
 
 **⚠️ IMPORTANT:** Only copy files that are **unique to YOUR server** - not the whole EQ client!
 
-The installer automatically creates this directory structure:
+The installer automatically creates the **actual EverQuest RoF2 directory structure**:
 ```
 /var/www/html/eq-patches/
-├── UI/default/          ← UI files go here
-├── Resources/           ← Zone files, archives go here
-├── Maps/                ← Map files go here
-├── Sounds/              ← Custom sounds go here
-├── Music/               ← Custom music go here
+├── ActorEffects/        ← Actor effect files
+├── Atlas/
+├── AudioTriggers/
+├── EnvEmitterEffects/
+├── Resources/           ← Zone files (.s3d, .eqg)
+├── RenderEffects/
+├── SpellEffects/        ← Spell effect files
+├── help/                ← Help files
+├── maps/                ← Map files (.txt)
+├── sounds/              ← Sound files
+├── storyline/
+├── uifiles/             ← UI files (EQUI_*.xml, *.tga)
+├── userdata/
 └── README.txt           ← Instructions
 ```
 
@@ -86,15 +94,19 @@ cd /var/www/html/eq-patches
 cp /path/to/custom/spells_us.txt .
 cp /path/to/custom/dbg.txt .
 
-# UI files - already have UI/default/ folder!
-cp /path/to/custom/EQUI_*.xml UI/default/
+# UI files go in uifiles/ folder!
+cp /path/to/custom/EQUI_*.xml uifiles/
+cp /path/to/custom/*.tga uifiles/
 
-# Zone files - already have Resources/ folder!
+# Zone files go in Resources/ folder!
 cp /path/to/custom/customzone.eqg Resources/
 cp /path/to/custom/customzone.s3d Resources/
 
-# Map files - already have Maps/ folder!
-cp /path/to/maps/*.txt Maps/
+# Map files go in maps/ folder!
+cp /path/to/maps/*.txt maps/
+
+# Spell effects go in SpellEffects/ folder!
+cp /path/to/custom/*.eff SpellEffects/
 ```
 
 **What NOT to copy:**

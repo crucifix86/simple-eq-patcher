@@ -115,51 +115,68 @@ if [ "$EUID" -ne 0 ]; then
 fi
 echo "  ✓ Patch directory: $PATCH_DIR"
 
-# Create EverQuest directory structure
+# Create EverQuest RoF2 directory structure (mirrors actual client)
 echo ""
-echo "📁 Creating EverQuest directory structure..."
-mkdir -p "$PATCH_DIR/UI/default"
+echo "📁 Creating EverQuest RoF2 directory structure..."
+
+# Create all directories that exist in actual EverQuest RoF2 client
+mkdir -p "$PATCH_DIR/ActorEffects"
+mkdir -p "$PATCH_DIR/Atlas"
+mkdir -p "$PATCH_DIR/AudioTriggers"
+mkdir -p "$PATCH_DIR/EnvEmitterEffects"
 mkdir -p "$PATCH_DIR/Resources"
-mkdir -p "$PATCH_DIR/Maps"
-mkdir -p "$PATCH_DIR/Sounds"
-mkdir -p "$PATCH_DIR/Music"
+mkdir -p "$PATCH_DIR/RenderEffects"
+mkdir -p "$PATCH_DIR/SpellEffects"
+mkdir -p "$PATCH_DIR/help"
+mkdir -p "$PATCH_DIR/maps"
+mkdir -p "$PATCH_DIR/sounds"
+mkdir -p "$PATCH_DIR/storyline"
+mkdir -p "$PATCH_DIR/uifiles"
+mkdir -p "$PATCH_DIR/userdata"
 
-# Create README files to explain each directory
+# Create main README
 cat > "$PATCH_DIR/README.txt" << 'EOF'
-EverQuest Patch Directory Structure
-====================================
+EverQuest RoF2 Patch Directory Structure
+=========================================
 
-Place your custom files in the appropriate directories:
+This directory mirrors the EverQuest client structure.
+Place your custom/modified files in the matching directories.
 
-/                       - Root level files (spells_us.txt, dbg.txt, etc.)
-/UI/default/           - UI files (EQUI_*.xml)
-/Resources/            - Resource files (.s3d, .eqg archives)
-/Maps/                 - Map files
-/Sounds/               - Custom sound files
-/Music/                - Custom music files
+Common directories:
+/                      - Root files (spells_us.txt, dbg.txt, etc.)
+/Resources/            - Zone files (.s3d, .eqg archives)
+/uifiles/              - UI files (EQUI_*.xml, *.tga, *.dds)
+/maps/                 - Map files (.txt)
+/sounds/               - Sound files
+/SpellEffects/         - Spell effect files
+/ActorEffects/         - Actor effect files
+/help/                 - Help files
 
-After adding files, run: ./update-patches.sh
+After adding files, run:
+  ./update-patches.sh
 
-This will regenerate manifest.json with all your files.
-Players will automatically download them when they run the launcher.
+This regenerates manifest.json with all your files.
+Players automatically download them when they run the launcher.
+
+IMPORTANT: Only add files unique to YOUR server!
+- Do NOT copy the entire EQ client
+- Only copy modified/custom files
 EOF
 
-cat > "$PATCH_DIR/UI/default/README.txt" << 'EOF'
-Place custom UI XML files here
-Example: EQUI_Inventory.xml, EQUI_PlayerWindow.xml, etc.
-EOF
-
-cat > "$PATCH_DIR/Resources/README.txt" << 'EOF'
-Place custom resource files here
-Example: zone files (.eqg), texture archives (.s3d), etc.
-EOF
-
-echo "  ✓ Created standard EverQuest directories:"
-echo "    - UI/default/ (for UI files)"
-echo "    - Resources/ (for .eqg, .s3d files)"
-echo "    - Maps/ (for map files)"
-echo "    - Sounds/ (for custom sounds)"
-echo "    - Music/ (for custom music)"
+echo "  ✓ Created EverQuest RoF2 directory structure:"
+echo "    - ActorEffects/"
+echo "    - Atlas/"
+echo "    - AudioTriggers/"
+echo "    - EnvEmitterEffects/"
+echo "    - Resources/"
+echo "    - RenderEffects/"
+echo "    - SpellEffects/"
+echo "    - help/"
+echo "    - maps/"
+echo "    - sounds/"
+echo "    - storyline/"
+echo "    - uifiles/"
+echo "    - userdata/"
 
 # Copy manifest builder to patch directory
 echo ""
