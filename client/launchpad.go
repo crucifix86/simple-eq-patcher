@@ -133,8 +133,12 @@ func main() {
 	serverLabel.TextSize = 16
 	serverLabel.Alignment = fyne.TextAlignCenter
 
-	// Create news fader (centered, below server name)
+	// Create news fader with frame (centered, below server name)
 	newsFader := createNewsFader(config.ServerURL)
+
+	// Create semi-transparent background for news
+	newsBackground := canvas.NewRectangle(color.RGBA{R: 0, G: 0, B: 0, A: 180})
+	newsFrame := container.NewStack(newsBackground, container.NewPadded(newsFader))
 
 	statusLabel = widget.NewLabel("Initializing...")
 	statusLabel.Alignment = fyne.TextAlignCenter
@@ -192,7 +196,7 @@ func main() {
 		layout.NewSpacer(),
 		container.NewCenter(titleLabel),
 		container.NewCenter(serverLabel),
-		container.NewCenter(newsFader),
+		container.NewCenter(newsFrame),
 		layout.NewSpacer(),
 		layout.NewSpacer(),
 		container.NewCenter(statusLabel),
