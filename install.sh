@@ -7,6 +7,21 @@ echo "  Simple EQ Patcher - Ubuntu 24.04 Server Installation"
 echo "════════════════════════════════════════════════════════"
 echo ""
 
+# Check for --update flag
+if [ "$1" == "--update" ] || [ "$1" == "-u" ]; then
+    echo "🔄 Update mode: Pulling latest from git..."
+    git pull origin main
+    if [ $? -eq 0 ]; then
+        echo "  ✓ Updated to latest version"
+        echo ""
+        echo "Re-running installer with latest code..."
+        exec "$0" "${@:2}"
+    else
+        echo "  ✗ Git pull failed"
+        exit 1
+    fi
+fi
+
 # Determine if we need sudo
 if [ "$EUID" -eq 0 ]; then
    SUDO=""

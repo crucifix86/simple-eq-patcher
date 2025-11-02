@@ -200,6 +200,20 @@ func checkForUpdatesOnStartup(win fyne.Window) {
 		return
 	}
 
+	// Check if launcher itself needs updating
+	launcherNeedsUpdate := checkLauncherUpdates(manifest)
+	if launcherNeedsUpdate {
+		progressBar.Hide()
+		statusLabel.SetText("📦 Launcher update available")
+
+		dialog.ShowInformation(
+			"Launcher Update Available",
+			fmt.Sprintf("A new version of the launcher is available!\n\nPlease download the latest version:\n%s/eq-patcher-client.zip\n\nExtract and replace your current files.", config.ServerURL),
+			win,
+		)
+		// Continue checking game files anyway
+	}
+
 	statusLabel.SetText("Checking files...")
 	progressBar.SetValue(0.3)
 
@@ -578,6 +592,52 @@ func launchGame(config *Config) error {
 	}
 
 	return cmd.Run()
+}
+
+func checkLauncherUpdates(manifest *Manifest) bool {
+	launcherFiles := []string{"LaunchPad.exe", "patcher.exe", "patcher-config.json"}
+
+	for _, file := range manifest.Files {
+		// Check if this is a launcher file
+		isLauncherFile := false
+		for _, lf := range launcherFiles {
+			if file.Path == lf {
+				isLauncherFile = true
+				break
+			}
+		}
+
+		if !isLauncherFile {
+			continue
+		}
+
+		// Get launcher directory
+		exePath, err := os.Executable()
+		if err != nil {
+			continue
+		}
+		launcherDir := filepath.Dir(exePath)
+		localPath := filepath.Join(launcherDir, file.Path)
+
+		// Check if file exists
+		info, err := os.Stat(localPath)
+		if os.IsNotExist(err) {
+			return true // Launcher file missing
+		}
+
+		// Check size
+		if info.Size() != file.Size {
+			return true // Launcher file different size
+		}
+
+		// Check MD5
+		localMD5, err := calculateMD5(localPath)
+		if err != nil || localMD5 != file.MD5 {
+			return true // Launcher file different hash
+		}
+	}
+
+	return false
 }
 
 func showError(win fyne.Window, message string) {

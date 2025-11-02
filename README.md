@@ -40,11 +40,19 @@ Unlike complex patchers with YAML configs and client types, this patcher is **de
 
 ### 1. Install on Your Server
 
+**First time install:**
 ```bash
 git clone https://github.com/crucifix86/simple-eq-patcher.git
 cd simple-eq-patcher
 ./install.sh
 ```
+
+**Update to latest version:**
+```bash
+cd simple-eq-patcher
+./install.sh --update
+```
+This pulls latest from git and rebuilds everything automatically!
 
 **Done!** The installer automatically:
 - Installs Go, nginx, and zip
@@ -128,13 +136,14 @@ curl http://YOUR_SERVER_IP/eq-patches/manifest.json
 8. Click website button to visit server Discord/forums
 
 **Features:**
-- ✅ Auto-patching with progress bar
+- ✅ Auto-update check on startup (not when clicking play!)
+- ✅ Launcher self-update detection (notifies when new version available)
 - ✅ Graphics Settings with resolution, texture quality, effects
 - ✅ Compatibility Fix Wizard (fixes fullscreen/DPI issues on modern Windows)
 - ✅ Configurable website button (Discord, forums, etc.)
 - ✅ Customizable launcher title and server name
 - ✅ EverQuest-themed UI with background image
-- ✅ Clean button layout with proper spacing
+- ✅ Progress bar shows connection, checking, downloading stages
 
 **Note:** `LaunchPad.exe` is a full-featured GUI application. If players have issues, they can use the CLI `patcher.exe` instead.
 
