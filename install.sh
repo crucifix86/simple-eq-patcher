@@ -309,10 +309,6 @@ if [ -f "./client/LaunchPad.exe" ]; then
 fi
 cp ./client/patcher.exe "$PATCH_DIR/"
 echo "  ✓ patcher.exe (CLI fallback) copied to $PATCH_DIR"
-if [ -f "./manager.exe" ]; then
-    cp ./manager.exe "$PATCH_DIR/"
-    echo "  ✓ manager.exe (Admin tool) copied to $PATCH_DIR"
-fi
 
 # Create sample client config
 cat > "$PATCH_DIR/patcher-config.json" << EOF

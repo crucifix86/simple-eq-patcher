@@ -35,3 +35,10 @@ Thumbs.db
 *.a
 *.so
 *.exe~
+
+# Manager app (work in progress - not ready for production)
+manager.exe
+manager-linux
+manager/
+build-manager.sh
+MANAGER_SUMMARY.md
