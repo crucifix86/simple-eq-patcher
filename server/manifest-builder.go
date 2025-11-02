@@ -48,13 +48,20 @@ func main() {
 			return err
 		}
 
-		// Skip directories, manifest, update script, and README files
+		// Skip directories, manifest, update script, README, and launcher files
+		// Launcher files should NOT be in manifest (can't update themselves while running)
 		baseName := filepath.Base(path)
 		if info.IsDir() ||
 		   baseName == "manifest.json" ||
 		   baseName == "update-patches.sh" ||
 		   baseName == "manifest-builder" ||
-		   baseName == "README.txt" {
+		   baseName == "README.txt" ||
+		   baseName == "LaunchPad.exe" ||
+		   baseName == "patcher.exe" ||
+		   baseName == "patcher-config.json" ||
+		   baseName == "manager.exe" ||
+		   baseName == "news.json" ||
+		   baseName == "eq-patcher-client.zip" {
 			return nil
 		}
 
