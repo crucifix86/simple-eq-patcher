@@ -3,6 +3,7 @@ server/manifest-builder
 client/patcher.exe
 client/patcher-linux
 client/patcher
+client/LaunchPad.exe
 
 # Test files
 test/

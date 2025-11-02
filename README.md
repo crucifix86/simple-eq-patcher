@@ -104,14 +104,18 @@ curl http://YOUR_SERVER_IP/patches/manifest.json
 
 ### 5. Distribute to Players
 
-**Give players these 2 files:**
-1. `patcher.exe` - from `/var/www/eq-patches/patcher.exe`
-2. `patcher-config.json` - from `/var/www/eq-patches/patcher-config.json` (already configured!)
+**Give players these files:**
+1. `LaunchPad.exe` - GUI launcher (recommended) from `/var/www/eq-patches/LaunchPad.exe`
+2. `patcher-config.json` - Configuration file from `/var/www/eq-patches/patcher-config.json`
+3. `patcher.exe` - CLI fallback (optional)
 
 **Player instructions:**
-1. Copy both files to their EverQuest folder (same folder as `eqgame.exe`)
-2. Double-click `patcher.exe`
-3. Done! It downloads your custom files and launches the game
+1. Copy `LaunchPad.exe` and `patcher-config.json` to their EverQuest folder (same folder as `eqgame.exe`)
+2. Double-click `LaunchPad.exe`
+3. Click "PLAY" button
+4. Done! It downloads your custom files and launches the game
+
+**Note:** `LaunchPad.exe` is a GUI application with a progress bar and Play button. If players have issues, they can use the CLI `patcher.exe` instead.
 
 ## 📖 Daily Usage
 
@@ -160,7 +164,8 @@ cd /home/doug/simple-eq-patcher
 
 Output:
 - `server/manifest-builder` - Linux binary for server
-- `client/patcher.exe` - Windows binary for players
+- `client/LaunchPad.exe` - Windows GUI launcher for players (23MB, includes graphics)
+- `client/patcher.exe` - Windows CLI fallback for players (7MB, command-line)
 - `client/patcher-linux` - Linux binary for testing
 
 ## 📋 Workflow
@@ -169,17 +174,17 @@ Output:
 1. Run `./install.sh` on your Ubuntu server - **DONE!**
 2. Copy your custom files to `/var/www/eq-patches`
 3. Run `./update-patches.sh`
-4. Give `patcher.exe` + `patcher-config.json` to players
+4. Give `LaunchPad.exe` + `patcher-config.json` to players
 
 ### Daily Updates (When You Change Server Files)
 1. Copy updated files to `/var/www/eq-patches`
 2. Run `./update-patches.sh`
-3. Players auto-download on next patcher run
+3. Players auto-download on next launcher run
 
 ### Player Experience
-1. Copy `patcher.exe` + `patcher-config.json` to EverQuest folder
-2. Double-click `patcher.exe` whenever they want to play
-3. Patcher auto-downloads your custom files and launches game
+1. Copy `LaunchPad.exe` + `patcher-config.json` to EverQuest folder
+2. Double-click `LaunchPad.exe` whenever they want to play
+3. Launcher shows progress, downloads your custom files, and launches game
 
 ## 🔍 How It Works
 
@@ -308,20 +313,28 @@ curl http://YOUR_SERVER_IP/patches/manifest.json
 
 ### Give to Players:
 
-- `patcher.exe` (from `/var/www/eq-patches/patcher.exe`)
+- `LaunchPad.exe` (GUI launcher from `/var/www/eq-patches/LaunchPad.exe`)
 - `patcher-config.json` (from `/var/www/eq-patches/patcher-config.json`)
+- `patcher.exe` (CLI fallback - optional)
 
-Players copy both files to their `C:\EverQuest\` folder and run `patcher.exe`!
+Players copy `LaunchPad.exe` and `patcher-config.json` to their `C:\EverQuest\` folder and double-click `LaunchPad.exe`!
 
 ## 📦 Distribution
 
 **What to give players:**
-- `patcher.exe` (single file)
-- `patcher-config.json` (pre-configured with your server URL)
+- `LaunchPad.exe` - GUI launcher with progress bar and Play button (recommended)
+- `patcher-config.json` - Pre-configured with your server URL
+- `patcher.exe` - CLI fallback (optional, for troubleshooting)
 
-**Or:**
-- Just `patcher.exe`
-- Instructions to edit config on first run
+**Players need:**
+```
+C:\EverQuest\
+├── eqgame.exe (their existing game)
+├── LaunchPad.exe (your patcher - replaces retail launcher)
+└── patcher-config.json (your server config)
+```
+
+Just double-click `LaunchPad.exe` to patch and play!
 
 ## 🔐 Security Notes
 

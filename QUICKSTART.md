@@ -68,26 +68,32 @@ Should show your files in JSON format.
 
 ### 5️⃣ Give to Players
 
-**Two files from `/var/www/eq-patches/`:**
-1. `patcher.exe`
+**Files from `/var/www/eq-patches/`:**
+1. `LaunchPad.exe` (GUI launcher with Play button - recommended)
 2. `patcher-config.json` (already has your server IP!)
+3. `patcher.exe` (CLI fallback - optional)
 
-Players copy both to their `C:\EverQuest\` folder.
+Players copy `LaunchPad.exe` and `patcher-config.json` to their `C:\EverQuest\` folder.
 
 ## For Players
 
 ### Setup (One Time)
 
-1. Get `patcher.exe` and `patcher-config.json` from your server admin
+1. Get `LaunchPad.exe` and `patcher-config.json` from your server admin
 2. Copy both to your EverQuest folder (where `eqgame.exe` is)
 3. Done!
 
 ### Every Time You Play
 
-Double-click `patcher.exe` - it automatically:
+Double-click `LaunchPad.exe` - you'll see:
+- A window showing your server name
+- Progress bar for downloads
+- "PLAY" button
+
+The launcher automatically:
 - Checks for updates
 - Downloads any new/changed files
-- Launches EverQuest
+- Launches EverQuest when you click PLAY
 
 ## Daily Workflow (When You Update Server)
 
@@ -125,34 +131,28 @@ cp /opt/eqemu/zones/mycustomzone_chr.txt .
 
 ### What players see:
 
+**LaunchPad Window:**
 ```
-═══════════════════════════════════════
-  Simple EverQuest Patcher v1.0
-═══════════════════════════════════════
-
-Server: http://yourserver.com/patches
-Game: eqgame.exe patchme
-
-Downloading manifest...
-✓ Manifest loaded (3 files)
-
-Checking files...
-  [HASH MISMATCH] spells_us.txt
-  [MISSING] mycustomzone.eqg
-  [MISSING] mycustomzone_chr.txt
-
-3 file(s) need updating
-
-Downloading files...
-[1/3] spells_us.txt... ✓
-[2/3] mycustomzone.eqg... ✓
-[3/3] mycustomzone_chr.txt... ✓
-
-✓ All files updated!
-
-Launching game...
-✓ Game launched successfully!
+┌─────────────────────────────────┐
+│   EverQuest LaunchPad           │
+├─────────────────────────────────┤
+│                                 │
+│   EverQuest Emulator Server     │
+│                                 │
+│   Downloading files... (2/3)    │
+│   ████████████░░░░░░░  66%      │
+│                                 │
+│        [    PLAY    ]           │
+│        [    Exit    ]           │
+│                                 │
+└─────────────────────────────────┘
 ```
+
+Process:
+1. Checks manifest
+2. Downloads updated files with progress bar
+3. Click PLAY when ready
+4. Game launches!
 
 ## Pro Tips
 

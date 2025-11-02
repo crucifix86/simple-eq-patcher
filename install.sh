@@ -129,9 +129,17 @@ server {
         add_header X-Content-Type-Options nosniff;
     }
 
-    # Optional: Serve patcher.exe for download
+    # Optional: Serve patcher files for download
+    location /download/LaunchPad.exe {
+        alias /var/www/eq-patches/LaunchPad.exe;
+    }
+
     location /download/patcher.exe {
         alias /var/www/eq-patches/patcher.exe;
+    }
+
+    location /download/patcher-config.json {
+        alias /var/www/eq-patches/patcher-config.json;
     }
 }
 EOF
@@ -180,16 +188,21 @@ echo "🌍 Detecting server IP..."
 SERVER_IP=$(curl -s ifconfig.me 2>/dev/null || echo "YOUR_SERVER_IP")
 echo "  Server IP: $SERVER_IP"
 
-# Copy patcher.exe for distribution
+# Copy client files for distribution
 echo ""
-echo "📦 Preparing client patcher..."
+echo "📦 Preparing client files..."
+if [ -f "./client/LaunchPad.exe" ]; then
+    cp ./client/LaunchPad.exe "$PATCH_DIR/"
+    echo "  ✓ LaunchPad.exe (GUI) copied to $PATCH_DIR"
+fi
 cp ./client/patcher.exe "$PATCH_DIR/"
-echo "  ✓ patcher.exe copied to $PATCH_DIR"
+echo "  ✓ patcher.exe (CLI fallback) copied to $PATCH_DIR"
 
 # Create sample client config
 cat > "$PATCH_DIR/patcher-config.json" << EOF
 {
   "server_url": "http://$SERVER_IP/patches",
+  "server_name": "EverQuest Emulator Server",
   "game_exe": "eqgame.exe",
   "game_args": "patchme"
 }
@@ -230,10 +243,13 @@ echo "   cd $PATCH_DIR"
 echo "   ./update-patches.sh"
 echo ""
 echo "3️⃣  Distribute to players:"
-echo "   - patcher.exe"
+echo "   - LaunchPad.exe (GUI launcher, recommended)"
+echo "   - patcher.exe (CLI fallback)"
 echo "   - patcher-config.json (already configured)"
 echo ""
-echo "   Download URL: http://$SERVER_IP/download/patcher.exe"
+echo "   Download URLs:"
+echo "     http://$SERVER_IP/download/LaunchPad.exe"
+echo "     http://$SERVER_IP/download/patcher.exe"
 echo ""
 echo "📖 Full documentation: README.md"
 echo "🚀 Quick start guide: QUICKSTART.md"
