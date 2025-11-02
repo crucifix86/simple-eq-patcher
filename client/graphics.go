@@ -136,8 +136,17 @@ func getAvailableResolutions() []string {
 }
 
 func showGraphicsDialog(win fyne.Window) {
-	// Load current settings
-	ini, err := LoadINI("eqclient.ini")
+	// Get the directory where the launcher is located
+	launcherPath, err := os.Executable()
+	if err != nil {
+		dialog.ShowError(fmt.Errorf("Could not determine launcher location: %v", err), win)
+		return
+	}
+	launcherDir := filepath.Dir(launcherPath)
+
+	// Load current settings from eqclient.ini in the same directory
+	iniPath := filepath.Join(launcherDir, "eqclient.ini")
+	ini, err := LoadINI(iniPath)
 	if err != nil {
 		dialog.ShowError(fmt.Errorf("Failed to load graphics settings: %v", err), win)
 		return
@@ -466,15 +475,19 @@ func showCompatibilityWizard(win fyne.Window) {
 }
 
 func applyCompatibilityFix(fixType string) error {
-	// Get full path to eqgame.exe
-	exePath, err := filepath.Abs(config.GameExe)
+	// Get the directory where the launcher is located
+	launcherPath, err := os.Executable()
 	if err != nil {
-		return err
+		return fmt.Errorf("could not determine launcher location: %v", err)
 	}
+	launcherDir := filepath.Dir(launcherPath)
+
+	// Get full path to eqgame.exe in the same directory as launcher
+	exePath := filepath.Join(launcherDir, config.GameExe)
 
 	// Check if eqgame.exe exists
 	if _, err := os.Stat(exePath); os.IsNotExist(err) {
-		return fmt.Errorf("eqgame.exe not found at: %s", exePath)
+		return fmt.Errorf("game executable not found: %s\n\nMake sure %s is in the same folder as LaunchPad.exe", exePath, config.GameExe)
 	}
 
 	// Build registry command based on fix type

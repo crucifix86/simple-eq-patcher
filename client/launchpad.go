@@ -417,12 +417,29 @@ func calculateMD5(filePath string) (string, error) {
 }
 
 func launchGame(config *Config) error {
+	// Get the directory where the launcher is located
+	exePath, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("could not determine launcher location: %v", err)
+	}
+	launcherDir := filepath.Dir(exePath)
+
+	// Look for game exe in the same directory as the launcher
+	gameExePath := filepath.Join(launcherDir, config.GameExe)
+
+	// Check if game exe exists
+	if _, err := os.Stat(gameExePath); os.IsNotExist(err) {
+		return fmt.Errorf("game executable not found: %s\n\nMake sure %s is in the same folder as LaunchPad.exe", gameExePath, config.GameExe)
+	}
+
 	args := []string{}
 	if config.GameArgs != "" {
 		args = strings.Fields(config.GameArgs)
 	}
 
-	cmd := exec.Command(config.GameExe, args...)
+	cmd := exec.Command(gameExePath, args...)
+	// Set working directory to the game directory
+	cmd.Dir = launcherDir
 
 	if runtime.GOOS == "windows" {
 		return cmd.Start()
