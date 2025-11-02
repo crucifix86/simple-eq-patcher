@@ -48,7 +48,8 @@ type Config struct {
 }
 
 const (
-	configFile = "patcher-config.json"
+	configFile        = "patcher-config.json"
+	localManifestFile = ".patcher-manifest.json"
 )
 
 // Directories managed by the patcher (these mirror the EQ client structure)
@@ -293,7 +294,7 @@ func checkForUpdatesOnStartup(win fyne.Window) {
 			func(update bool) {
 				if update {
 					// Apply updates (download new files and remove obsolete ones)
-					go performUpdate(win, toDownload, toDelete)
+					go performUpdate(win, manifest, toDownload, toDelete)
 				} else {
 					// Skip updates
 					statusLabel.SetText("✓ Ready to play (updates skipped)")
@@ -303,13 +304,14 @@ func checkForUpdatesOnStartup(win fyne.Window) {
 			win,
 		)
 	} else {
-		// No updates needed
+		// No updates needed - save current manifest as our local record
+		saveLocalManifest(manifest)
 		statusLabel.SetText("✓ Up to date - Ready to play")
 		playButton.Enable()
 	}
 }
 
-func performUpdate(win fyne.Window, toDownload []FileEntry, toDelete []string) {
+func performUpdate(win fyne.Window, manifest *Manifest, toDownload []FileEntry, toDelete []string) {
 	playButton.Disable()
 	progressBar.Show()
 	progressBar.SetValue(0)
@@ -348,6 +350,9 @@ func performUpdate(win fyne.Window, toDownload []FileEntry, toDelete []string) {
 		}
 		currentOp++
 	}
+
+	// Save the server manifest as our local record
+	saveLocalManifest(manifest)
 
 	progressBar.SetValue(1.0)
 	statusLabel.SetText("✓ All files updated - Ready to play")
@@ -698,47 +703,72 @@ func checkLauncherUpdates(manifest *Manifest) bool {
 	return false
 }
 
-// findObsoleteFiles scans managed directories and returns files that are not in the manifest
-func findObsoleteFiles(manifest *Manifest) []string {
+// findObsoleteFiles finds files that were previously installed by the patcher but are no longer in the manifest
+func findObsoleteFiles(serverManifest *Manifest) []string {
 	obsolete := []string{}
 
-	// Create a map of all files in manifest for quick lookup
-	manifestFiles := make(map[string]bool)
-	for _, file := range manifest.Files {
-		manifestFiles[filepath.ToSlash(file.Path)] = true
+	// Load local manifest (tracks files we've previously downloaded)
+	localManifest := loadLocalManifest()
+	if localManifest == nil {
+		// No local manifest = first run, nothing to delete
+		return obsolete
 	}
 
-	// Scan each managed directory
-	for _, dir := range managedDirs {
-		// Check if directory exists
-		if _, err := os.Stat(dir); os.IsNotExist(err) {
+	// Launcher files that should never be deleted
+	launcherFiles := map[string]bool{
+		"LaunchPad.exe":        true,
+		"patcher.exe":          true,
+		"patcher-config.json":  true,
+		".patcher-manifest.json": true,
+	}
+
+	// Create a map of all files in server manifest for quick lookup
+	serverFiles := make(map[string]bool)
+	for _, file := range serverManifest.Files {
+		serverFiles[filepath.ToSlash(file.Path)] = true
+	}
+
+	// Check each file we previously downloaded
+	for _, file := range localManifest.Files {
+		normalizedPath := filepath.ToSlash(file.Path)
+
+		// Skip launcher files
+		if launcherFiles[normalizedPath] {
 			continue
 		}
 
-		// Walk the directory tree
-		filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return nil
-			}
-
-			// Skip directories
-			if info.IsDir() {
-				return nil
-			}
-
-			// Convert to forward slashes for comparison
-			normalizedPath := filepath.ToSlash(path)
-
-			// Check if file is in manifest
-			if !manifestFiles[normalizedPath] {
-				obsolete = append(obsolete, path)
-			}
-
-			return nil
-		})
+		// If file is not in server manifest, mark for deletion
+		if !serverFiles[normalizedPath] {
+			obsolete = append(obsolete, file.Path)
+		}
 	}
 
 	return obsolete
+}
+
+// loadLocalManifest loads the local manifest that tracks files we've downloaded
+func loadLocalManifest() *Manifest {
+	data, err := os.ReadFile(localManifestFile)
+	if err != nil {
+		return nil
+	}
+
+	var manifest Manifest
+	err = json.Unmarshal(data, &manifest)
+	if err != nil {
+		return nil
+	}
+
+	return &manifest
+}
+
+// saveLocalManifest saves the current server manifest as our local record
+func saveLocalManifest(manifest *Manifest) {
+	data, err := json.MarshalIndent(manifest, "", "  ")
+	if err != nil {
+		return
+	}
+	os.WriteFile(localManifestFile, data, 0644)
 }
 
 func showError(win fyne.Window, message string) {
