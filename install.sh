@@ -46,6 +46,13 @@ else
     echo "  ✓ nginx already installed"
 fi
 
+if ! command -v zip &> /dev/null; then
+    echo "  Installing zip..."
+    $SUDO apt-get install -y zip
+else
+    echo "  ✓ zip already installed"
+fi
+
 # Build server tools only (client executables are pre-compiled)
 echo ""
 echo "🔨 Building server manifest-builder..."
@@ -146,7 +153,13 @@ server {
         add_header X-Content-Type-Options nosniff;
     }
 
-    # Optional: Serve patcher files for download
+    # Client bundle download (recommended)
+    location /download/eq-patcher-client.zip {
+        alias /var/www/eq-patches/eq-patcher-client.zip;
+        add_header Content-Disposition "attachment; filename=eq-patcher-client.zip";
+    }
+
+    # Individual file downloads (optional)
     location /download/LaunchPad.exe {
         alias /var/www/eq-patches/LaunchPad.exe;
     }
@@ -229,6 +242,24 @@ cat > "$PATCH_DIR/patcher-config.json" << EOF
 EOF
 echo "  ✓ Sample patcher-config.json created"
 
+# Create client bundle ZIP
+echo ""
+echo "📦 Creating client bundle..."
+cd "$PATCH_DIR"
+rm -f eq-patcher-client.zip
+zip -q eq-patcher-client.zip LaunchPad.exe patcher.exe patcher-config.json
+if [ $? -eq 0 ]; then
+    ZIP_SIZE=$(du -h eq-patcher-client.zip | cut -f1)
+    echo "  ✓ Client bundle created: eq-patcher-client.zip ($ZIP_SIZE)"
+    echo "  Contains:"
+    echo "    - LaunchPad.exe (GUI launcher)"
+    echo "    - patcher.exe (CLI fallback)"
+    echo "    - patcher-config.json (pre-configured)"
+else
+    echo "  ✗ Failed to create client bundle"
+fi
+cd - > /dev/null
+
 # Create usage script
 cat > "$PATCH_DIR/update-patches.sh" << 'EOF'
 #!/bin/bash
@@ -263,13 +294,14 @@ echo "   cd $PATCH_DIR"
 echo "   ./update-patches.sh"
 echo ""
 echo "3️⃣  Distribute to players:"
-echo "   - LaunchPad.exe (GUI launcher, recommended)"
-echo "   - patcher.exe (CLI fallback)"
-echo "   - patcher-config.json (already configured)"
 echo ""
-echo "   Download URLs:"
-echo "     http://$SERVER_IP/download/LaunchPad.exe"
-echo "     http://$SERVER_IP/download/patcher.exe"
+echo "   📦 Client Bundle (recommended - all-in-one):"
+echo "      http://$SERVER_IP/download/eq-patcher-client.zip"
+echo ""
+echo "   Or individual files:"
+echo "      http://$SERVER_IP/download/LaunchPad.exe"
+echo "      http://$SERVER_IP/download/patcher.exe"
+echo "      http://$SERVER_IP/download/patcher-config.json"
 echo ""
 echo "📖 Full documentation: README.md"
 echo "🚀 Quick start guide: QUICKSTART.md"

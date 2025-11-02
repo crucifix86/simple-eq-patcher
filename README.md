@@ -105,19 +105,27 @@ curl http://YOUR_SERVER_IP/patches/manifest.json
 
 ### 5. Distribute to Players
 
-**Give players these files:**
-1. `LaunchPad.exe` - GUI launcher (recommended) from `/var/www/eq-patches/LaunchPad.exe`
-2. `patcher-config.json` - Configuration file from `/var/www/eq-patches/patcher-config.json`
+**Give players the client bundle (easiest):**
+- Download: `http://YOUR_SERVER_IP/download/eq-patcher-client.zip`
+- Contains everything they need:
+  - `LaunchPad.exe` - GUI launcher
+  - `patcher.exe` - CLI fallback
+  - `patcher-config.json` - Pre-configured for your server
+
+**Or individual files from `/var/www/eq-patches/`:**
+1. `LaunchPad.exe` - GUI launcher (recommended)
+2. `patcher-config.json` - Configuration file
 3. `patcher.exe` - CLI fallback (optional)
 
 **Player instructions:**
-1. Copy `LaunchPad.exe` and `patcher-config.json` to their EverQuest folder (same folder as `eqgame.exe`)
-2. Edit `patcher-config.json` to customize server name, website button, and launcher title
-3. Double-click `LaunchPad.exe`
-4. Click "PLAY" button to patch and launch game
-5. Use "Graphics Settings" button to configure display options
-6. Click "Compatibility Fix Wizard" if having fullscreen/DPI issues
-7. Click website button to visit server Discord/forums
+1. Download `eq-patcher-client.zip` from your server
+2. Extract the ZIP to their EverQuest folder (same folder as `eqgame.exe`)
+3. (Optional) Edit `patcher-config.json` to customize settings
+4. Double-click `LaunchPad.exe`
+5. Click "PLAY" button to patch and launch game
+6. Use "Graphics Settings" button to configure display options
+7. Click "Compatibility Fix Wizard" if having fullscreen/DPI issues
+8. Click website button to visit server Discord/forums
 
 **Features:**
 - ✅ Auto-patching with progress bar
@@ -362,16 +370,25 @@ Players copy `LaunchPad.exe` and `patcher-config.json` to their `C:\EverQuest\` 
 
 ## 📦 Distribution
 
-**What to give players:**
-- `LaunchPad.exe` - Full-featured GUI launcher (recommended)
-- `patcher-config.json` - Pre-configured with your server settings
-- `patcher.exe` - CLI fallback (optional, for troubleshooting)
+**Give players ONE file (easiest):**
+- `eq-patcher-client.zip` - Download from `http://YOUR_SERVER_IP/download/eq-patcher-client.zip`
 
-**Players get:**
+**Contains everything:**
+- `LaunchPad.exe` - Full-featured GUI launcher
+- `patcher.exe` - CLI fallback (for troubleshooting)
+- `patcher-config.json` - Pre-configured with your server settings
+
+**Players just:**
+1. Download the ZIP
+2. Extract to `C:\EverQuest\` (or their EQ folder)
+3. Double-click `LaunchPad.exe`
+
+**Result:**
 ```
 C:\EverQuest\
 ├── eqgame.exe (their existing game)
 ├── LaunchPad.exe (your launcher - replaces retail)
+├── patcher.exe (CLI fallback)
 └── patcher-config.json (server config)
 ```
 
