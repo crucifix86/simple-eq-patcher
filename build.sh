@@ -50,7 +50,7 @@ mv rsrc_windres.syso rsrc.syso
 # Build with mingw
 echo "  Compiling LaunchPad.exe..."
 GOOS=windows GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc \
-  go build -ldflags="-H windowsgui -s -w" -o LaunchPad.exe launchpad.go graphics.go browser.go
+  go build -ldflags="-H windowsgui -s -w" -o LaunchPad.exe launchpad.go graphics.go browser.go ini.go
 
 if [ $? -eq 0 ]; then
     echo "✓ GUI LaunchPad built: client/LaunchPad.exe"

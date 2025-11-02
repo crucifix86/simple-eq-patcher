@@ -105,7 +105,7 @@ func main() {
 		myApp.Quit()
 	})
 
-	// Graphics Settings button
+	// Graphics Settings button (at top)
 	graphicsButton := widget.NewButton("Graphics Settings", func() {
 		showGraphicsDialog(myWindow)
 	})
@@ -122,26 +122,43 @@ func main() {
 		})
 	}
 
-	// Create button rows
-	var buttonRow *fyne.Container
+	// Create button layout per user specs:
+	// - Graphics Settings at top (centered)
+	// - PLAY button on left
+	// - Website button (if configured) on left before Exit
+	// - Exit button at bottom left
+	leftButtons := container.NewVBox(
+		playButton,
+	)
 	if websiteButton != nil {
-		buttonRow = container.NewGridWithColumns(3, playButton, graphicsButton, websiteButton)
-	} else {
-		buttonRow = container.NewGridWithColumns(2, playButton, graphicsButton)
+		leftButtons.Add(websiteButton)
 	}
+	leftButtons.Add(exitButton)
 
-	// Create overlay container with semi-transparent background
-	overlay := container.NewVBox(
-		layout.NewSpacer(),
-		container.NewCenter(titleLabel),
-		container.NewCenter(serverLabel),
-		layout.NewSpacer(),
-		container.NewCenter(statusLabel),
-		container.NewCenter(progressBar),
-		layout.NewSpacer(),
-		container.NewCenter(buttonRow),
-		container.NewCenter(exitButton),
-		layout.NewSpacer(),
+	// Create overlay container with new layout
+	overlay := container.NewBorder(
+		// Top: Graphics Settings button
+		container.NewCenter(graphicsButton),
+		// Bottom: empty
+		nil,
+		// Left: Play, Website (optional), Exit buttons
+		container.NewVBox(
+			layout.NewSpacer(),
+			leftButtons,
+			layout.NewSpacer(),
+		),
+		// Right: empty
+		nil,
+		// Center: Title, Status, Progress
+		container.NewVBox(
+			layout.NewSpacer(),
+			container.NewCenter(titleLabel),
+			container.NewCenter(serverLabel),
+			layout.NewSpacer(),
+			container.NewCenter(statusLabel),
+			container.NewCenter(progressBar),
+			layout.NewSpacer(),
+		),
 	)
 
 	// Stack background and overlay
