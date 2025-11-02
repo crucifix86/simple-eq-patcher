@@ -112,10 +112,18 @@ curl http://YOUR_SERVER_IP/patches/manifest.json
 **Player instructions:**
 1. Copy `LaunchPad.exe` and `patcher-config.json` to their EverQuest folder (same folder as `eqgame.exe`)
 2. Double-click `LaunchPad.exe`
-3. Click "PLAY" button
-4. Done! It downloads your custom files and launches the game
+3. Click "PLAY" button to patch and launch game
+4. Use "Graphics Settings" button to configure display options
+5. Click website button (if configured) to visit server website
 
-**Note:** `LaunchPad.exe` is a GUI application with a progress bar and Play button. If players have issues, they can use the CLI `patcher.exe` instead.
+**Features:**
+- ✅ Auto-patching with progress bar
+- ✅ Graphics Settings (guided setup or manual INI edit)
+- ✅ Configurable website button
+- ✅ Customizable launcher title
+- ✅ EverQuest-themed UI with background image
+
+**Note:** `LaunchPad.exe` is a full-featured GUI application. If players have issues, they can use the CLI `patcher.exe` instead.
 
 ## 📖 Daily Usage
 
@@ -322,19 +330,33 @@ Players copy `LaunchPad.exe` and `patcher-config.json` to their `C:\EverQuest\` 
 ## 📦 Distribution
 
 **What to give players:**
-- `LaunchPad.exe` - GUI launcher with progress bar and Play button (recommended)
-- `patcher-config.json` - Pre-configured with your server URL
+- `LaunchPad.exe` - Full-featured GUI launcher (recommended)
+- `patcher-config.json` - Pre-configured with your server settings
 - `patcher.exe` - CLI fallback (optional, for troubleshooting)
 
-**Players need:**
+**Players get:**
 ```
 C:\EverQuest\
 ├── eqgame.exe (their existing game)
-├── LaunchPad.exe (your patcher - replaces retail launcher)
-└── patcher-config.json (your server config)
+├── LaunchPad.exe (your launcher - replaces retail)
+└── patcher-config.json (server config)
 ```
 
+**LaunchPad Features:**
+- ✨ Auto-patching with progress bar
+- 🎮 Graphics Settings button (guided + manual)
+- 🌐 Configurable website button
+- 🎨 EverQuest-themed UI
+- 🔧 Customizable branding
+
 Just double-click `LaunchPad.exe` to patch and play!
+
+## 🎮 Player Features
+
+See [FEATURES.md](FEATURES.md) for detailed feature documentation including:
+- Graphics Settings configuration guide
+- INI file editing
+- Customization options
 
 ## 🔐 Security Notes
 

@@ -38,10 +38,13 @@ type Manifest struct {
 }
 
 type Config struct {
-	ServerURL    string `json:"server_url"`
-	ServerName   string `json:"server_name"`
-	GameExe      string `json:"game_exe"`
-	GameArgs     string `json:"game_args"`
+	ServerURL     string `json:"server_url"`
+	ServerName    string `json:"server_name"`
+	LauncherTitle string `json:"launcher_title"`
+	WebsiteURL    string `json:"website_url"`
+	WebsiteLabel  string `json:"website_label"`
+	GameExe       string `json:"game_exe"`
+	GameArgs      string `json:"game_args"`
 }
 
 const (
@@ -58,14 +61,20 @@ var (
 
 func main() {
 	myApp := app.New()
-	myWindow := myApp.NewWindow("EverQuest LaunchPad")
 
-	// Load configuration
+	// Load configuration first to get launcher title
 	var err error
 	config, err = loadConfig()
 	if err != nil {
 		config = createDefaultConfig()
 	}
+
+	// Use configurable title
+	windowTitle := config.LauncherTitle
+	if windowTitle == "" {
+		windowTitle = "EverQuest LaunchPad"
+	}
+	myWindow := myApp.NewWindow(windowTitle)
 
 	// Load background image
 	bg := canvas.NewImageFromReader(strings.NewReader(string(backgroundImage)), "background")
@@ -96,6 +105,31 @@ func main() {
 		myApp.Quit()
 	})
 
+	// Graphics Settings button
+	graphicsButton := widget.NewButton("Graphics Settings", func() {
+		showGraphicsDialog(myWindow)
+	})
+
+	// Website button (if configured)
+	var websiteButton *widget.Button
+	if config.WebsiteURL != "" && config.WebsiteURL != "https://www.example.com" {
+		buttonLabel := config.WebsiteLabel
+		if buttonLabel == "" {
+			buttonLabel = "Visit Website"
+		}
+		websiteButton = widget.NewButton(buttonLabel, func() {
+			openBrowser(config.WebsiteURL)
+		})
+	}
+
+	// Create button rows
+	var buttonRow *fyne.Container
+	if websiteButton != nil {
+		buttonRow = container.NewGridWithColumns(3, playButton, graphicsButton, websiteButton)
+	} else {
+		buttonRow = container.NewGridWithColumns(2, playButton, graphicsButton)
+	}
+
 	// Create overlay container with semi-transparent background
 	overlay := container.NewVBox(
 		layout.NewSpacer(),
@@ -105,7 +139,8 @@ func main() {
 		container.NewCenter(statusLabel),
 		container.NewCenter(progressBar),
 		layout.NewSpacer(),
-		container.NewCenter(container.NewGridWithColumns(2, playButton, exitButton)),
+		container.NewCenter(buttonRow),
+		container.NewCenter(exitButton),
 		layout.NewSpacer(),
 	)
 
@@ -218,10 +253,13 @@ func loadConfig() (*Config, error) {
 
 func createDefaultConfig() *Config {
 	config := &Config{
-		ServerURL:  "http://example.com/patches",
-		ServerName: "EverQuest Server",
-		GameExe:    "eqgame.exe",
-		GameArgs:   "patchme",
+		ServerURL:     "http://example.com/patches",
+		ServerName:    "EverQuest Emulator Server",
+		LauncherTitle: "EverQuest LaunchPad",
+		WebsiteURL:    "https://www.example.com",
+		WebsiteLabel:  "Visit Website",
+		GameExe:       "eqgame.exe",
+		GameArgs:      "patchme",
 	}
 
 	data, _ := json.MarshalIndent(config, "", "  ")

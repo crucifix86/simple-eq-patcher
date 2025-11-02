@@ -203,6 +203,9 @@ cat > "$PATCH_DIR/patcher-config.json" << EOF
 {
   "server_url": "http://$SERVER_IP/patches",
   "server_name": "EverQuest Emulator Server",
+  "launcher_title": "EverQuest LaunchPad",
+  "website_url": "https://www.yourserver.com",
+  "website_label": "Visit Website",
   "game_exe": "eqgame.exe",
   "game_args": "patchme"
 }
