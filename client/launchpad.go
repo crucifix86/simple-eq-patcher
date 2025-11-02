@@ -182,10 +182,34 @@ func performPatchAndLaunch(win fyne.Window) {
 	// Download manifest
 	manifest, err := downloadManifest(config.ServerURL)
 	if err != nil {
-		showError(win, fmt.Sprintf("Failed to check for updates: %v", err))
-		playButton.Enable()
+		// Can't connect to patch server - ask if they want to play anyway
+		statusLabel.SetText("Cannot connect to patch server")
 		progressBar.Hide()
-		statusLabel.SetText("Ready to play")
+
+		dialog.ShowConfirm(
+			"Patch Server Unavailable",
+			fmt.Sprintf("Could not connect to patch server:\n\n%v\n\nWould you like to launch the game anyway?\n\n(You may be missing latest updates)", err),
+			func(playAnyway bool) {
+				if playAnyway {
+					// Skip patching, just launch
+					statusLabel.SetText("Launching EverQuest...")
+					err := launchGame(config)
+					if err != nil {
+						showError(win, fmt.Sprintf("Failed to launch game: %v", err))
+						playButton.Enable()
+						statusLabel.SetText("Ready to play")
+						return
+					}
+					// Exit launcher
+					os.Exit(0)
+				} else {
+					// User chose not to play
+					playButton.Enable()
+					statusLabel.SetText("Ready to play")
+				}
+			},
+			win,
+		)
 		return
 	}
 
@@ -227,10 +251,34 @@ func performPatchAndLaunch(win fyne.Window) {
 
 			err := downloadFile(config.ServerURL, file.Path)
 			if err != nil {
-				showError(win, fmt.Sprintf("Failed to download %s: %v", file.Path, err))
-				playButton.Enable()
+				// Download failed - ask if they want to continue anyway
+				statusLabel.SetText("Download failed")
 				progressBar.Hide()
-				statusLabel.SetText("Ready to play")
+
+				dialog.ShowConfirm(
+					"Download Failed",
+					fmt.Sprintf("Failed to download %s:\n\n%v\n\nWould you like to launch the game anyway?\n\n(Some files may be outdated or missing)", filepath.Base(file.Path), err),
+					func(playAnyway bool) {
+						if playAnyway {
+							// Skip remaining downloads, just launch
+							statusLabel.SetText("Launching EverQuest...")
+							err := launchGame(config)
+							if err != nil {
+								showError(win, fmt.Sprintf("Failed to launch game: %v", err))
+								playButton.Enable()
+								statusLabel.SetText("Ready to play")
+								return
+							}
+							// Exit launcher
+							os.Exit(0)
+						} else {
+							// User chose not to play
+							playButton.Enable()
+							statusLabel.SetText("Ready to play")
+						}
+					},
+					win,
+				)
 				return
 			}
 		}
