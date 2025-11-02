@@ -1,9 +1,11 @@
-# Binaries
+# Server binaries (built during install)
 server/manifest-builder
-client/patcher.exe
+
+# Client test binaries
 client/patcher-linux
 client/patcher
-client/LaunchPad.exe
+
+# Note: client/patcher.exe and client/LaunchPad.exe are pre-compiled and committed
 
 # Windows resource files (generated)
 client/rsrc.syso

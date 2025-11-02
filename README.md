@@ -48,7 +48,8 @@ cd simple-eq-patcher
 
 **Done!** The installer automatically:
 - Installs Go and nginx
-- Builds server and client tools
+- Builds server manifest-builder tool
+- Copies pre-compiled client executables
 - Creates `/var/www/eq-patches`
 - Configures nginx
 - Opens firewall port 80
@@ -167,7 +168,13 @@ Next time players run `patcher.exe`:
 - Downloads 3 new zone files
 - Launches game
 
-## 🔧 Building from Source
+## 🔧 Building from Source (Developers Only)
+
+**Note:** Pre-compiled executables are included in the repository. You only need to build if you're modifying the code.
+
+**Requirements:**
+- Go compiler
+- mingw-w64 cross-compiler: `sudo apt-get install gcc-mingw-w64-x86-64`
 
 ```bash
 cd /home/doug/simple-eq-patcher
@@ -176,8 +183,8 @@ cd /home/doug/simple-eq-patcher
 
 Output:
 - `server/manifest-builder` - Linux binary for server
-- `client/LaunchPad.exe` - Windows GUI launcher for players (23MB, includes graphics)
-- `client/patcher.exe` - Windows CLI fallback for players (7MB, command-line)
+- `client/LaunchPad.exe` - Windows GUI launcher (23MB, includes graphics)
+- `client/patcher.exe` - Windows CLI fallback (7MB, command-line)
 - `client/patcher-linux` - Linux binary for testing
 
 ## 📋 Workflow

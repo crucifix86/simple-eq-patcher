@@ -46,18 +46,22 @@ else
     echo "  ✓ nginx already installed"
 fi
 
-# Check for mingw-w64 (for building Windows executables)
-if ! command -v x86_64-w64-mingw32-gcc &> /dev/null; then
-    echo "  Installing mingw-w64 cross-compiler..."
-    $SUDO apt-get install -y gcc-mingw-w64-x86-64
-else
-    echo "  ✓ mingw-w64 already installed"
-fi
-
-# Build the tools
+# Build server tools only (client executables are pre-compiled)
 echo ""
-echo "🔨 Building patcher tools..."
-./build.sh
+echo "🔨 Building server manifest-builder..."
+cd server
+go build -o manifest-builder manifest-builder.go
+if [ $? -eq 0 ]; then
+    echo "  ✓ Server tool built: server/manifest-builder"
+else
+    echo "  ✗ Failed to build server tool"
+    exit 1
+fi
+cd ..
+
+echo "  ✓ Client executables (pre-compiled):"
+echo "    - client/LaunchPad.exe (GUI launcher)"
+echo "    - client/patcher.exe (CLI fallback)"
 
 if [ ! -f "./server/manifest-builder" ] || [ ! -f "./client/patcher.exe" ]; then
     echo "✗ Build failed!"
