@@ -40,6 +40,13 @@ echo "  Getting Fyne dependencies..."
 go get fyne.io/fyne/v2@latest
 go mod tidy
 
+# Generate Windows resource file with icon using windres
+echo "  Embedding icon..."
+x86_64-w64-mingw32-windres icon.rc -O coff -o rsrc_windres.syso
+
+# Rename to standard name for Go to pick up automatically
+mv rsrc_windres.syso rsrc.syso
+
 # Build with mingw
 echo "  Compiling LaunchPad.exe..."
 GOOS=windows GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc \

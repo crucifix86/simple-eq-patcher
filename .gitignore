@@ -7,6 +7,7 @@ client/LaunchPad.exe
 
 # Windows resource files (generated)
 client/rsrc.syso
+client/rsrc_windres.syso
 client/*.syso
 
 # Test files
