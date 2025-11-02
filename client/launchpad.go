@@ -176,19 +176,21 @@ func main() {
 
 func performPatchAndLaunch(win fyne.Window) {
 	playButton.Disable()
-	statusLabel.SetText("Checking for updates...")
+	statusLabel.SetText("Connecting to patch server...")
 	progressBar.Show()
+	progressBar.SetValue(0)
 
 	// Download manifest
 	manifest, err := downloadManifest(config.ServerURL)
 	if err != nil {
 		// Can't connect to patch server - ask if they want to play anyway
-		statusLabel.SetText("Cannot connect to patch server")
+		statusLabel.SetText("⚠️ Connection failed")
 		progressBar.Hide()
 
+		manifestURL := strings.TrimRight(config.ServerURL, "/") + "/manifest.json"
 		dialog.ShowConfirm(
 			"Patch Server Unavailable",
-			fmt.Sprintf("Could not connect to patch server:\n\n%v\n\nWould you like to launch the game anyway?\n\n(You may be missing latest updates)", err),
+			fmt.Sprintf("Could not connect to patch server:\n\nURL: %s\n\nError: %v\n\nWould you like to launch the game anyway?\n\n(You may be missing latest updates)", manifestURL, err),
 			func(playAnyway bool) {
 				if playAnyway {
 					// Skip patching, just launch
@@ -213,7 +215,8 @@ func performPatchAndLaunch(win fyne.Window) {
 		return
 	}
 
-	statusLabel.SetText(fmt.Sprintf("Checking %d files...", len(manifest.Files)))
+	statusLabel.SetText(fmt.Sprintf("✓ Connected - Checking %d files...", len(manifest.Files)))
+	progressBar.SetValue(0.1)
 
 	// Check files
 	toDownload := []FileEntry{}
@@ -242,17 +245,18 @@ func performPatchAndLaunch(win fyne.Window) {
 
 	// Download files if needed
 	if len(toDownload) > 0 {
-		statusLabel.SetText(fmt.Sprintf("Downloading %d file(s)...", len(toDownload)))
+		statusLabel.SetText(fmt.Sprintf("📥 Downloading %d file(s)...", len(toDownload)))
+		progressBar.SetValue(0.2)
 
 		for i, file := range toDownload {
-			progress := float64(i) / float64(len(toDownload))
+			progress := 0.2 + (float64(i) / float64(len(toDownload)) * 0.7)
 			progressBar.SetValue(progress)
-			statusLabel.SetText(fmt.Sprintf("Downloading %s (%d/%d)", filepath.Base(file.Path), i+1, len(toDownload)))
+			statusLabel.SetText(fmt.Sprintf("📥 Downloading %s (%d/%d)", filepath.Base(file.Path), i+1, len(toDownload)))
 
 			err := downloadFile(config.ServerURL, file.Path)
 			if err != nil {
 				// Download failed - ask if they want to continue anyway
-				statusLabel.SetText("Download failed")
+				statusLabel.SetText("⚠️ Download failed")
 				progressBar.Hide()
 
 				dialog.ShowConfirm(
@@ -283,14 +287,16 @@ func performPatchAndLaunch(win fyne.Window) {
 			}
 		}
 
-		progressBar.SetValue(1.0)
-		statusLabel.SetText("All files updated!")
+		progressBar.SetValue(0.9)
+		statusLabel.SetText("✓ All files updated!")
 	} else {
-		statusLabel.SetText("All files up to date!")
+		progressBar.SetValue(0.9)
+		statusLabel.SetText("✓ All files up to date!")
 	}
 
 	// Launch game
-	statusLabel.SetText("Launching EverQuest...")
+	progressBar.SetValue(1.0)
+	statusLabel.SetText("🎮 Launching EverQuest...")
 	err = launchGame(config)
 	if err != nil {
 		showError(win, fmt.Sprintf("Failed to launch game: %v", err))
@@ -301,6 +307,7 @@ func performPatchAndLaunch(win fyne.Window) {
 	}
 
 	// Exit launcher
+	statusLabel.SetText("✓ Game launched successfully!")
 	os.Exit(0)
 }
 
