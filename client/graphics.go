@@ -6,7 +6,10 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strconv"
+	"syscall"
+	"unsafe"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -26,6 +29,40 @@ type GraphicsSettings struct {
 	PixelShaders       bool
 }
 
+// Windows API structures for display mode enumeration
+type DEVMODE struct {
+	dmDeviceName       [32]uint16
+	dmSpecVersion      uint16
+	dmDriverVersion    uint16
+	dmSize             uint16
+	dmDriverExtra      uint16
+	dmFields           uint32
+	dmPositionX        int32
+	dmPositionY        int32
+	dmDisplayOrientation uint32
+	dmDisplayFixedOutput uint32
+	dmColor            int16
+	dmDuplex           int16
+	dmYResolution      int16
+	dmTTOption         int16
+	dmCollate          int16
+	dmFormName         [32]uint16
+	dmLogPixels        uint16
+	dmBitsPerPel       uint32
+	dmPelsWidth        uint32
+	dmPelsHeight       uint32
+	dmDisplayFlags     uint32
+	dmDisplayFrequency uint32
+	dmICMMethod        uint32
+	dmICMIntent        uint32
+	dmMediaType        uint32
+	dmDitherType       uint32
+	dmReserved1        uint32
+	dmReserved2        uint32
+	dmPanningWidth     uint32
+	dmPanningHeight    uint32
+}
+
 var commonResolutions = []string{
 	"800x600",
 	"1024x768",
@@ -36,6 +73,66 @@ var commonResolutions = []string{
 	"1920x1080",
 	"2560x1440",
 	"3840x2160",
+}
+
+// getAvailableResolutions queries Windows for supported display modes
+func getAvailableResolutions() []string {
+	if runtime.GOOS != "windows" {
+		return commonResolutions
+	}
+
+	// Try to query Windows display modes
+	user32 := syscall.NewLazyDLL("user32.dll")
+	enumDisplaySettings := user32.NewProc("EnumDisplaySettingsW")
+
+	resolutionMap := make(map[string]bool)
+	var devMode DEVMODE
+	devMode.dmSize = uint16(unsafe.Sizeof(devMode))
+
+	// Enumerate all display modes
+	var modeNum uint32 = 0
+	for {
+		ret, _, _ := enumDisplaySettings.Call(
+			0, // NULL for current display
+			uintptr(modeNum),
+			uintptr(unsafe.Pointer(&devMode)),
+		)
+
+		if ret == 0 {
+			break
+		}
+
+		// Only include modes with 32-bit color
+		if devMode.dmBitsPerPel == 32 {
+			resStr := fmt.Sprintf("%dx%d", devMode.dmPelsWidth, devMode.dmPelsHeight)
+			resolutionMap[resStr] = true
+		}
+
+		modeNum++
+	}
+
+	// Convert map to sorted slice
+	resolutions := []string{}
+	for res := range resolutionMap {
+		resolutions = append(resolutions, res)
+	}
+
+	// Sort by width then height
+	sort.Slice(resolutions, func(i, j int) bool {
+		wi, hi := parseResolution(resolutions[i])[0], parseResolution(resolutions[i])[1]
+		wj, hj := parseResolution(resolutions[j])[0], parseResolution(resolutions[j])[1]
+		if wi == wj {
+			return hi < hj
+		}
+		return wi < wj
+	})
+
+	// If we got resolutions, use them; otherwise fall back to common
+	if len(resolutions) > 0 {
+		return resolutions
+	}
+
+	return commonResolutions
 }
 
 func showGraphicsDialog(win fyne.Window) {
@@ -49,18 +146,44 @@ func showGraphicsDialog(win fyne.Window) {
 	// Parse current settings
 	currentSettings := parseGraphicsSettings(ini)
 
-	// Find current resolution index
+	// Get available resolutions from system
+	availableResolutions := getAvailableResolutions()
+
+	// Make sure current resolution is in the list
 	currentRes := fmt.Sprintf("%dx%d", currentSettings.Width, currentSettings.Height)
+	resolutionFound := false
+	for _, res := range availableResolutions {
+		if res == currentRes {
+			resolutionFound = true
+			break
+		}
+	}
+
+	// If current resolution not in list, add it
+	if !resolutionFound && currentSettings.Width > 0 && currentSettings.Height > 0 {
+		availableResolutions = append(availableResolutions, currentRes)
+		// Re-sort
+		sort.Slice(availableResolutions, func(i, j int) bool {
+			wi, hi := parseResolution(availableResolutions[i])[0], parseResolution(availableResolutions[i])[1]
+			wj, hj := parseResolution(availableResolutions[j])[0], parseResolution(availableResolutions[j])[1]
+			if wi == wj {
+				return hi < hj
+			}
+			return wi < wj
+		})
+	}
+
+	// Find current resolution index
 	selectedResIndex := 0
-	for i, res := range commonResolutions {
+	for i, res := range availableResolutions {
 		if res == currentRes {
 			selectedResIndex = i
 			break
 		}
 	}
 
-	// Create UI elements
-	resolutionSelect := widget.NewSelect(commonResolutions, nil)
+	// Create UI elements with available resolutions
+	resolutionSelect := widget.NewSelect(availableResolutions, nil)
 	resolutionSelect.SetSelectedIndex(selectedResIndex)
 
 	fullscreenCheck := widget.NewCheck("Fullscreen", nil)
