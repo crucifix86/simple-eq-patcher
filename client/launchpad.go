@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	_ "embed"
 	"fmt"
+	"image/color"
 	"io"
 	"net/http"
 	"os"
@@ -12,6 +13,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -45,6 +47,21 @@ type Config struct {
 	WebsiteLabel  string `json:"website_label"`
 	GameExe       string `json:"game_exe"`
 	GameArgs      string `json:"game_args"`
+}
+
+type NewsItem struct {
+	Text      string            `json:"text"`
+	Formatted string            `json:"formatted"`
+	Color     string            `json:"color"`
+	Style     map[string]string `json:"style"`
+}
+
+type NewsConfig struct {
+	Items          []*NewsItem `json:"items"`
+	RotationTime   int         `json:"rotation_time"`
+	FadeTime       float64     `json:"fade_time"`
+	Enabled        bool        `json:"enabled"`
+	BackgroundBlur bool        `json:"background_blur"`
 }
 
 const (
@@ -116,6 +133,9 @@ func main() {
 	serverLabel.TextSize = 16
 	serverLabel.Alignment = fyne.TextAlignCenter
 
+	// Create news fader (centered, below server name)
+	newsFader := createNewsFader(config.ServerURL)
+
 	statusLabel = widget.NewLabel("Initializing...")
 	statusLabel.Alignment = fyne.TextAlignCenter
 	statusLabel.Importance = widget.MediumImportance
@@ -172,6 +192,7 @@ func main() {
 		layout.NewSpacer(),
 		container.NewCenter(titleLabel),
 		container.NewCenter(serverLabel),
+		container.NewCenter(newsFader),
 		layout.NewSpacer(),
 		layout.NewSpacer(),
 		container.NewCenter(statusLabel),
@@ -773,4 +794,100 @@ func saveLocalManifest(manifest *Manifest) {
 
 func showError(win fyne.Window, message string) {
 	dialog.ShowError(fmt.Errorf("%s", message), win)
+}
+
+// downloadNews fetches the news.json from the server
+func downloadNews(serverURL string) (*NewsConfig, error) {
+	url := strings.TrimRight(serverURL, "/") + "/news.json"
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("server returned status %d", resp.StatusCode)
+	}
+
+	var newsConfig NewsConfig
+	err = json.NewDecoder(resp.Body).Decode(&newsConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return &newsConfig, nil
+}
+
+// createNewsFader creates a rotating news fader widget
+func createNewsFader(serverURL string) *canvas.Text {
+	newsLabel := canvas.NewText("", theme.ForegroundColor())
+	newsLabel.TextSize = 14
+	newsLabel.Alignment = fyne.TextAlignCenter
+	newsLabel.TextStyle = fyne.TextStyle{Italic: true}
+
+	// Try to download news
+	go func() {
+		newsConfig, err := downloadNews(serverURL)
+		if err != nil || newsConfig == nil || len(newsConfig.Items) == 0 || !newsConfig.Enabled {
+			// No news or error - hide the label
+			newsLabel.Text = ""
+			newsLabel.Refresh()
+			return
+		}
+
+		// Start rotating through news items
+		currentIndex := 0
+		rotationTime := newsConfig.RotationTime
+		if rotationTime < 1 {
+			rotationTime = 5 // Default to 5 seconds
+		}
+
+		// Set first news item
+		if len(newsConfig.Items) > 0 {
+			newsLabel.Text = newsConfig.Items[0].Text
+			if newsConfig.Items[0].Color != "" && newsConfig.Items[0].Color != "#FFFFFF" {
+				newsLabel.Color = parseHexColor(newsConfig.Items[0].Color)
+			}
+			newsLabel.Refresh()
+		}
+
+		// Rotate through items using a ticker
+		ticker := time.NewTicker(time.Duration(rotationTime) * time.Second)
+		go func() {
+			for range ticker.C {
+				currentIndex = (currentIndex + 1) % len(newsConfig.Items)
+				item := newsConfig.Items[currentIndex]
+
+				newsLabel.Text = item.Text
+				if item.Color != "" && item.Color != "#FFFFFF" {
+					newsLabel.Color = parseHexColor(item.Color)
+				} else {
+					newsLabel.Color = theme.ForegroundColor()
+				}
+				newsLabel.Refresh()
+			}
+		}()
+	}()
+
+	return newsLabel
+}
+
+// parseHexColor converts a hex color string to color.Color
+func parseHexColor(hex string) color.Color {
+	// Remove # if present
+	if strings.HasPrefix(hex, "#") {
+		hex = hex[1:]
+	}
+
+	// Parse hex values
+	var r, g, b uint8
+	if len(hex) == 6 {
+		fmt.Sscanf(hex[0:2], "%x", &r)
+		fmt.Sscanf(hex[2:4], "%x", &g)
+		fmt.Sscanf(hex[4:6], "%x", &b)
+		return color.RGBA{R: r, G: g, B: b, A: 255}
+	}
+
+	return theme.ForegroundColor()
 }

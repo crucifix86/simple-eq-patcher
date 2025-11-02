@@ -1,0 +1,30 @@
+{
+  "items": [
+    {
+      "text": "Welcome to our EverQuest Server!",
+      "formatted": "<b><color=#FFD700>Welcome to our EverQuest Server!</color></b>",
+      "color": "#FFD700",
+      "style": {
+        "bold": "true"
+      }
+    },
+    {
+      "text": "Check our Discord for the latest updates",
+      "formatted": "<color=#87CEEB>Check our Discord for the latest updates</color>",
+      "color": "#87CEEB",
+      "style": {}
+    },
+    {
+      "text": "New custom zone coming soon!",
+      "formatted": "<i>New custom zone coming soon!</i>",
+      "color": "#FFFFFF",
+      "style": {
+        "italic": "true"
+      }
+    }
+  ],
+  "rotation_time": 5,
+  "fade_time": 0.5,
+  "enabled": true,
+  "background_blur": false
+}

@@ -57,10 +57,11 @@ This pulls latest from git and rebuilds everything automatically!
 **Done!** The installer automatically:
 - Installs Go, nginx, and zip
 - Builds server manifest-builder tool
-- Copies pre-compiled client executables
+- Copies pre-compiled client executables (LaunchPad.exe, patcher.exe, manager.exe)
 - Creates `/var/www/html/eq-patches`
 - Configures nginx
 - Opens firewall port 80
+- Creates example news.json for news fader
 
 ### 2. Add Your Custom Files
 

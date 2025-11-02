@@ -309,6 +309,10 @@ if [ -f "./client/LaunchPad.exe" ]; then
 fi
 cp ./client/patcher.exe "$PATCH_DIR/"
 echo "  ✓ patcher.exe (CLI fallback) copied to $PATCH_DIR"
+if [ -f "./manager.exe" ]; then
+    cp ./manager.exe "$PATCH_DIR/"
+    echo "  ✓ manager.exe (Admin tool) copied to $PATCH_DIR"
+fi
 
 # Create sample client config
 cat > "$PATCH_DIR/patcher-config.json" << EOF
@@ -323,6 +327,37 @@ cat > "$PATCH_DIR/patcher-config.json" << EOF
 }
 EOF
 echo "  ✓ Sample patcher-config.json created"
+
+# Create example news.json (optional - for news fader in LaunchPad)
+if [ ! -f "$PATCH_DIR/news.json" ]; then
+    cat > "$PATCH_DIR/news.json" << 'EOF'
+{
+  "items": [
+    {
+      "text": "Welcome to our EverQuest Server!",
+      "formatted": "<b><color=#FFD700>Welcome to our EverQuest Server!</color></b>",
+      "color": "#FFD700",
+      "style": {
+        "bold": "true"
+      }
+    },
+    {
+      "text": "Join our community Discord",
+      "formatted": "<color=#87CEEB>Join our community Discord</color>",
+      "color": "#87CEEB",
+      "style": {}
+    }
+  ],
+  "rotation_time": 5,
+  "fade_time": 0.5,
+  "enabled": true,
+  "background_blur": false
+}
+EOF
+    echo "  ✓ Example news.json created (customize with manager.exe)"
+else
+    echo "  ✓ Existing news.json preserved"
+fi
 
 # Create client bundle ZIP
 echo ""
