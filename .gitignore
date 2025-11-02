@@ -5,6 +5,10 @@ client/patcher-linux
 client/patcher
 client/LaunchPad.exe
 
+# Windows resource files (generated)
+client/rsrc.syso
+client/*.syso
+
 # Test files
 test/
 *.test

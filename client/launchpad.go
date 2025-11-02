@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/md5"
 	"encoding/json"
+	_ "embed"
 	"fmt"
 	"io"
 	"net/http"
@@ -14,10 +15,16 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
+
+//go:embed loadscreen.jpg
+var backgroundImage []byte
 
 type FileEntry struct {
 	Path string `json:"path"`
@@ -46,11 +53,12 @@ var (
 	statusLabel *widget.Label
 	progressBar *widget.ProgressBar
 	playButton  *widget.Button
+	exitButton  *widget.Button
 )
 
 func main() {
 	myApp := app.New()
-	myWindow := myApp.NewWindow("EverQuest Launcher")
+	myWindow := myApp.NewWindow("EverQuest LaunchPad")
 
 	// Load configuration
 	var err error
@@ -59,36 +67,54 @@ func main() {
 		config = createDefaultConfig()
 	}
 
-	// Create UI elements
-	serverLabel := widget.NewLabel(config.ServerName)
-	serverLabel.TextStyle.Bold = true
+	// Load background image
+	bg := canvas.NewImageFromReader(strings.NewReader(string(backgroundImage)), "background")
+	bg.FillMode = canvas.ImageFillStretch
+
+	// Create UI elements with EQ-style colors
+	titleLabel := canvas.NewText("EverQuest", theme.ForegroundColor())
+	titleLabel.TextSize = 24
+	titleLabel.TextStyle = fyne.TextStyle{Bold: true}
+	titleLabel.Alignment = fyne.TextAlignCenter
+
+	serverLabel := canvas.NewText(config.ServerName, theme.ForegroundColor())
+	serverLabel.TextSize = 14
+	serverLabel.Alignment = fyne.TextAlignCenter
 
 	statusLabel = widget.NewLabel("Ready to play")
+	statusLabel.Alignment = fyne.TextAlignCenter
+
 	progressBar = widget.NewProgressBar()
 	progressBar.Hide()
 
 	playButton = widget.NewButton("PLAY", func() {
 		go performPatchAndLaunch(myWindow)
 	})
+	playButton.Importance = widget.HighImportance
 
-	exitButton := widget.NewButton("Exit", func() {
+	exitButton = widget.NewButton("Exit", func() {
 		myApp.Quit()
 	})
 
-	// Layout
-	content := container.NewVBox(
-		widget.NewLabel(""),
-		serverLabel,
-		widget.NewLabel(""),
-		statusLabel,
-		progressBar,
-		widget.NewLabel(""),
-		playButton,
-		exitButton,
+	// Create overlay container with semi-transparent background
+	overlay := container.NewVBox(
+		layout.NewSpacer(),
+		container.NewCenter(titleLabel),
+		container.NewCenter(serverLabel),
+		layout.NewSpacer(),
+		container.NewCenter(statusLabel),
+		container.NewCenter(progressBar),
+		layout.NewSpacer(),
+		container.NewCenter(container.NewGridWithColumns(2, playButton, exitButton)),
+		layout.NewSpacer(),
 	)
 
+	// Stack background and overlay
+	content := container.NewStack(bg, overlay)
+
 	myWindow.SetContent(content)
-	myWindow.Resize(fyne.NewSize(400, 300))
+	myWindow.Resize(fyne.NewSize(600, 400))
+	myWindow.SetFixedSize(true)
 	myWindow.CenterOnScreen()
 	myWindow.ShowAndRun()
 }
