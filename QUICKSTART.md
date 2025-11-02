@@ -1,183 +1,152 @@
 # Quick Start Guide
 
-## For Server Administrators
+## For Server Administrators (Ubuntu 24.04)
 
-### 1️⃣ One-Time Setup
-
-```bash
-# Create patch directory
-sudo mkdir -p /var/www/eq-patches
-sudo chown $USER:$USER /var/www/eq-patches
-
-# Configure nginx (if not already done)
-sudo nano /etc/nginx/sites-available/default
-```
-
-Add to nginx config:
-```nginx
-location /patches {
-    alias /var/www/eq-patches;
-    autoindex off;
-    add_header Access-Control-Allow-Origin *;
-}
-```
+### 1️⃣ Install (One Command!)
 
 ```bash
-# Reload nginx
-sudo nginx -t
-sudo systemctl reload nginx
-
-# Test web server
-curl http://localhost/patches/
+git clone https://github.com/crucifix86/simple-eq-patcher.git
+cd simple-eq-patcher
+./install.sh
 ```
 
-### 2️⃣ Add Files to Patch
+**That's it!** The installer does everything:
+- Installs Go and nginx
+- Builds tools
+- Creates `/var/www/eq-patches`
+- Configures nginx
+- Opens firewall
+
+### 2️⃣ Add YOUR Custom Files
+
+**⚠️ ONLY copy files unique to YOUR server - not the whole EQ client!**
 
 ```bash
 cd /var/www/eq-patches
 
-# Copy any files you want players to have
-# IMPORTANT: Maintain directory structure!
+# Copy ONLY your custom/modified files
+cp /path/to/custom/spells_us.txt .
+cp /path/to/custom/dbg.txt .
 
-# Example: Root files
-cp ~/everquest_rof2/spells_us.txt .
-cp ~/everquest_rof2/dbg.txt .
+# Custom zones (only ones YOU created/modified!)
+cp /path/to/custom/mycustomzone.eqg .
 
-# Example: Subdirectories (create as needed)
-mkdir -p Resources
-cp ~/everquest_rof2/Resources/*.txt Resources/
-
+# Custom UI (if you have it)
 mkdir -p UI/default
-cp ~/everquest_rof2/UI/default/*.xml UI/default/
+cp /path/to/custom/EQUI_*.xml UI/default/
 ```
+
+**Don't copy:**
+- ❌ Entire EQ client
+- ❌ Vanilla/retail files
+- ❌ Game executables
 
 ### 3️⃣ Generate Manifest
 
 ```bash
-/home/doug/simple-eq-patcher/server/manifest-builder /var/www/eq-patches
-```
-
-You should see:
-```
-Scanning directory: /var/www/eq-patches
-  Added: spells_us.txt (123456 bytes, md5: a1b2c3d4)
-  Added: dbg.txt (987 bytes, md5: e5f6g7h8)
-  ...
-
-✓ Manifest created: /var/www/eq-patches/manifest.json
-✓ Total files: 3
-```
-
-### 4️⃣ Test from Server
-
-```bash
-curl http://localhost/patches/manifest.json
-```
-
-Should return JSON with file list.
-
-### 5️⃣ Distribute to Players
-
-Give players:
-1. `patcher.exe` (from `/home/doug/simple-eq-patcher/client/patcher.exe`)
-2. Pre-configured `patcher-config.json`:
-
-```json
-{
-  "server_url": "http://YOUR_SERVER_IP/patches",
-  "game_exe": "eqgame.exe",
-  "game_args": "patchme"
-}
-```
-
-Or just give them `patcher.exe` and tell them to edit config after first run.
-
-## For Players
-
-### Installation
-
-1. Download `patcher.exe` from your server admin
-2. Copy to your EverQuest folder (same folder as `eqgame.exe`)
-3. Double-click `patcher.exe`
-
-First run creates `patcher-config.json` - edit it with server URL from your admin.
-
-### Every Time You Play
-
-1. Double-click `patcher.exe`
-2. It checks for updates
-3. Downloads any new/changed files
-4. Launches EverQuest
-
-That's it!
-
-## Daily Server Workflow
-
-When you update files (spells, zones, etc.):
-
-```bash
-# 1. Copy updated files to patch directory
-cp /opt/eqemu/server/spells_us.txt /var/www/eq-patches/
-
-# 2. Regenerate manifest
-/home/doug/simple-eq-patcher/server/manifest-builder /var/www/eq-patches
-
-# 3. Done!
-```
-
-Players will automatically get the updates next time they run the patcher.
-
-## Example: Real World Usage
-
-### Scenario: You updated spells and added a new zone
-
-```bash
 cd /var/www/eq-patches
-
-# Copy updated spells
-cp /opt/eqemu/server/spells_us.txt .
-
-# Copy new zone files
-cp /opt/eqemu/zones/newzone.eqg .
-cp /opt/eqemu/zones/newzone_chr.txt .
-cp /opt/eqemu/zones/newzone.zon .
-
-# Regenerate manifest
-/home/doug/simple-eq-patcher/server/manifest-builder /var/www/eq-patches
+./update-patches.sh
 ```
 
 Output:
 ```
 Scanning directory: /var/www/eq-patches
-  Added: spells_us.txt (125000 bytes, md5: NEW_HASH)      ← Updated
-  Added: dbg.txt (987 bytes, md5: OLD_HASH)               ← Unchanged
-  Added: newzone.eqg (2500000 bytes, md5: NEW_HASH)       ← New file
-  Added: newzone_chr.txt (150 bytes, md5: NEW_HASH)       ← New file
-  Added: newzone.zon (50000 bytes, md5: NEW_HASH)         ← New file
+  Added: spells_us.txt (123456 bytes, md5: a1b2c3d4)
+  Added: mycustomzone.eqg (987654 bytes, md5: e5f6g7h8)
 
-✓ Manifest created: /var/www/eq-patches/manifest.json
-✓ Total files: 5
+✓ Manifest created: manifest.json
+✓ Total files: 2
 ```
 
-Next time players run patcher:
+### 4️⃣ Test It Works
+
+```bash
+curl http://YOUR_SERVER_IP/patches/manifest.json
 ```
+
+Should show your files in JSON format.
+
+### 5️⃣ Give to Players
+
+**Two files from `/var/www/eq-patches/`:**
+1. `patcher.exe`
+2. `patcher-config.json` (already has your server IP!)
+
+Players copy both to their `C:\EverQuest\` folder.
+
+## For Players
+
+### Setup (One Time)
+
+1. Get `patcher.exe` and `patcher-config.json` from your server admin
+2. Copy both to your EverQuest folder (where `eqgame.exe` is)
+3. Done!
+
+### Every Time You Play
+
+Double-click `patcher.exe` - it automatically:
+- Checks for updates
+- Downloads any new/changed files
+- Launches EverQuest
+
+## Daily Workflow (When You Update Server)
+
+```bash
+cd /var/www/eq-patches
+
+# Copy updated files
+cp /opt/eqemu/server/spells_us.txt .
+
+# Regenerate manifest
+./update-patches.sh
+
+# Done!
+```
+
+Players auto-download updates next time they run patcher.
+
+## Complete Example
+
+### You updated spells and added a custom zone:
+
+```bash
+cd /var/www/eq-patches
+
+# Updated spells
+cp /opt/eqemu/server/spells_us.txt .
+
+# Your NEW custom zone
+cp /opt/eqemu/zones/mycustomzone.eqg .
+cp /opt/eqemu/zones/mycustomzone_chr.txt .
+
+# Regenerate
+./update-patches.sh
+```
+
+### What players see:
+
+```
+═══════════════════════════════════════
+  Simple EverQuest Patcher v1.0
+═══════════════════════════════════════
+
+Server: http://yourserver.com/patches
+Game: eqgame.exe patchme
+
 Downloading manifest...
-✓ Manifest loaded (5 files)
+✓ Manifest loaded (3 files)
 
 Checking files...
-  [OK] dbg.txt
   [HASH MISMATCH] spells_us.txt
-  [MISSING] newzone.eqg
-  [MISSING] newzone_chr.txt
-  [MISSING] newzone.zon
+  [MISSING] mycustomzone.eqg
+  [MISSING] mycustomzone_chr.txt
 
-4 file(s) need updating
+3 file(s) need updating
 
 Downloading files...
-[1/4] spells_us.txt... ✓
-[2/4] newzone.eqg... ✓
-[3/4] newzone_chr.txt... ✓
-[4/4] newzone.zon... ✓
+[1/3] spells_us.txt... ✓
+[2/3] mycustomzone.eqg... ✓
+[3/3] mycustomzone_chr.txt... ✓
 
 ✓ All files updated!
 

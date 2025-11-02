@@ -36,146 +36,120 @@ Unlike complex patchers with YAML configs and client types, this patcher is **de
    - Different MD5 hash
 4. Launches the game
 
-## 🚀 Quick Start
+## 🚀 Quick Start (Ubuntu 24.04)
 
-### Server Setup
+### 1. Install on Your Server
 
-1. **Create patch directory** (mirrors your EQ client structure):
-   ```bash
-   mkdir -p /var/www/eq-patches
-   cd /var/www/eq-patches
-   ```
-
-2. **Copy files you want to patch** (keep directory structure):
-   ```bash
-   # Example: Copy custom spells file
-   cp /path/to/custom/spells_us.txt .
-
-   # Example: Copy custom zone files
-   cp /path/to/zones/*.eqg .
-
-   # Example: Copy UI files (maintain structure)
-   mkdir -p UI/default
-   cp /path/to/ui/EQUI_*.xml UI/default/
-   ```
-
-3. **Generate manifest**:
-   ```bash
-   /home/doug/simple-eq-patcher/server/manifest-builder /var/www/eq-patches
-   ```
-
-   Output:
-   ```
-   Scanning directory: /var/www/eq-patches
-     Added: spells_us.txt (123456 bytes, md5: a1b2c3d4)
-     Added: customzone.eqg (987654 bytes, md5: e5f6g7h8)
-     Added: UI/default/EQUI_Inventory.xml (45678 bytes, md5: i9j0k1l2)
-
-   ✓ Manifest created: /var/www/eq-patches/manifest.json
-   ✓ Total files: 3
-   ```
-
-4. **Serve via HTTP**:
-
-   **Option A: Nginx** (recommended for production)
-   ```nginx
-   server {
-       listen 80;
-       server_name yourserver.com;
-
-       location /patches {
-           alias /var/www/eq-patches;
-           autoindex off;
-       }
-   }
-   ```
-
-   **Option B: Quick test with Go**
-   ```bash
-   cd /var/www/eq-patches
-   python3 -m http.server 8080
-   # or
-   go run -m http.server
-   ```
-
-### Client Setup
-
-1. **Copy patcher to EQ directory**:
-   ```
-   C:\EverQuest\
-   ├── eqgame.exe
-   ├── patcher.exe          ← Your new patcher
-   └── patcher-config.json  ← Auto-created on first run
-   ```
-
-2. **Run patcher once** to create config:
-   ```
-   patcher.exe
-   ```
-
-   It will create `patcher-config.json` and exit.
-
-3. **Edit patcher-config.json**:
-   ```json
-   {
-     "server_url": "http://yourserver.com/patches",
-     "game_exe": "eqgame.exe",
-     "game_args": "patchme"
-   }
-   ```
-
-4. **Run patcher** - it will:
-   - Download manifest
-   - Check all files
-   - Download any missing/changed files
-   - Launch the game
-
-## 📖 Usage Examples
-
-### Example 1: Add Custom Spells
-
-**On Server:**
 ```bash
-cd /var/www/eq-patches
-cp /opt/eqemu/server/spells_us.txt .
-/home/doug/simple-eq-patcher/server/manifest-builder /var/www/eq-patches
+git clone https://github.com/crucifix86/simple-eq-patcher.git
+cd simple-eq-patcher
+./install.sh
 ```
 
-**Players:** Run `patcher.exe` - automatically downloads new spells
+**Done!** The installer automatically:
+- Installs Go and nginx
+- Builds server and client tools
+- Creates `/var/www/eq-patches`
+- Configures nginx
+- Opens firewall port 80
 
-### Example 2: Add Custom Zone
+### 2. Add Your Custom Files
 
-**On Server:**
-```bash
-cd /var/www/eq-patches
-cp /opt/eqemu/zones/customzone.eqg .
-cp /opt/eqemu/zones/customzone_chr.txt .
-/home/doug/simple-eq-patcher/server/manifest-builder /var/www/eq-patches
-```
+**⚠️ IMPORTANT:** Only copy files that are **unique to YOUR server** - not the whole EQ client!
 
-**Players:** Run `patcher.exe` - downloads zone files
-
-### Example 3: Update Multiple Files
-
-**On Server:**
 ```bash
 cd /var/www/eq-patches
 
-# Update spells
-cp /opt/eqemu/server/spells_us.txt .
+# Copy ONLY your custom/modified files
+cp /path/to/custom/spells_us.txt .
+cp /path/to/custom/dbg.txt .
 
-# Update zones
-cp /opt/eqemu/zones/*.eqg .
+# Custom zones (only ones you added/modified)
+cp /path/to/custom/customzone.eqg .
+cp /path/to/custom/customzone_chr.txt .
 
-# Update UI files (maintain directory structure)
+# Custom UI files (maintain directory structure)
 mkdir -p UI/default
-cp /opt/eqemu/ui/*.xml UI/default/
+cp /path/to/custom/EQUI_*.xml UI/default/
+```
+
+**What NOT to copy:**
+- ❌ The entire EQ client (players already have this)
+- ❌ Standard/vanilla zone files
+- ❌ Game executables (eqgame.exe, etc.)
+- ❌ Anything unchanged from retail
+
+### 3. Generate Manifest
+
+```bash
+cd /var/www/eq-patches
+./update-patches.sh
+```
+
+Output:
+```
+Scanning directory: /var/www/eq-patches
+  Added: spells_us.txt (123456 bytes, md5: a1b2c3d4)
+  Added: customzone.eqg (987654 bytes, md5: e5f6g7h8)
+
+✓ Manifest created: /var/www/eq-patches/manifest.json
+✓ Total files: 2
+```
+
+### 4. Test Your Patch Server
+
+```bash
+curl http://YOUR_SERVER_IP/patches/manifest.json
+```
+
+### 5. Distribute to Players
+
+**Give players these 2 files:**
+1. `patcher.exe` - from `/var/www/eq-patches/patcher.exe`
+2. `patcher-config.json` - from `/var/www/eq-patches/patcher-config.json` (already configured!)
+
+**Player instructions:**
+1. Copy both files to their EverQuest folder (same folder as `eqgame.exe`)
+2. Double-click `patcher.exe`
+3. Done! It downloads your custom files and launches the game
+
+## 📖 Daily Usage
+
+### When You Update Your Server Files
+
+```bash
+cd /var/www/eq-patches
+
+# Copy updated files
+cp /opt/eqemu/server/spells_us.txt .
 
 # Regenerate manifest
-/home/doug/simple-eq-patcher/server/manifest-builder /var/www/eq-patches
+./update-patches.sh
 ```
 
-**Players:** Run `patcher.exe` - downloads only changed files
+**Done!** Players automatically get updates next time they run the patcher.
+
+### Example: Updated Spells and Added Custom Zone
+
+```bash
+cd /var/www/eq-patches
+
+# Updated spells file
+cp /opt/eqemu/server/spells_us.txt .
+
+# New custom zone files (only copy YOUR custom zones!)
+cp /opt/eqemu/zones/mycustomzone.eqg .
+cp /opt/eqemu/zones/mycustomzone_chr.txt .
+cp /opt/eqemu/zones/mycustomzone.zon .
+
+# Regenerate manifest
+./update-patches.sh
+```
+
+Next time players run `patcher.exe`:
+- Downloads new spells_us.txt
+- Downloads 3 new zone files
+- Launches game
 
 ## 🔧 Building from Source
 
@@ -191,21 +165,21 @@ Output:
 
 ## 📋 Workflow
 
-### Initial Setup
-1. Create patch directory on server
-2. Build patcher tools
-3. Configure web server
+### One-Time Setup
+1. Run `./install.sh` on your Ubuntu server - **DONE!**
+2. Copy your custom files to `/var/www/eq-patches`
+3. Run `./update-patches.sh`
+4. Give `patcher.exe` + `patcher-config.json` to players
 
-### Daily Updates
-1. Copy updated files to `/var/www/eq-patches` (maintain structure)
-2. Run `manifest-builder /var/www/eq-patches`
-3. Done! Players auto-download on next patcher run
+### Daily Updates (When You Change Server Files)
+1. Copy updated files to `/var/www/eq-patches`
+2. Run `./update-patches.sh`
+3. Players auto-download on next patcher run
 
 ### Player Experience
-1. Download `patcher.exe` from your server
-2. Place in EQ directory
-3. Run once to configure
-4. Run anytime to patch and play
+1. Copy `patcher.exe` + `patcher-config.json` to EverQuest folder
+2. Double-click `patcher.exe` whenever they want to play
+3. Patcher auto-downloads your custom files and launches game
 
 ## 🔍 How It Works
 
@@ -310,39 +284,34 @@ if strings.Contains(path, "temp") || strings.HasSuffix(path, ".log") {
 - Verify `eqgame.exe` exists
 - Check `game_args` are correct
 
-## 🎓 Example: Complete Setup
+## 🎓 Complete Example Setup
 
-**Server (Linux):**
+### On Your Ubuntu Server:
+
 ```bash
-# 1. Create patch directory
-sudo mkdir -p /var/www/eq-patches
-sudo chown $USER:$USER /var/www/eq-patches
+# 1. Install (one command!)
+git clone https://github.com/crucifix86/simple-eq-patcher.git
+cd simple-eq-patcher
+./install.sh
 
-# 2. Copy your custom files
+# 2. Copy YOUR custom files only
 cd /var/www/eq-patches
-cp ~/everquest_rof2/spells_us.txt .
-cp ~/everquest_rof2/globalload.txt .
+cp /opt/eqemu/server/spells_us.txt .
+cp /opt/eqemu/server/dbg.txt .
 
 # 3. Generate manifest
-/home/doug/simple-eq-patcher/server/manifest-builder /var/www/eq-patches
+./update-patches.sh
 
-# 4. Serve via nginx (already configured at port 80)
-curl http://localhost/patches/manifest.json
+# 4. Test it works
+curl http://YOUR_SERVER_IP/patches/manifest.json
 ```
 
-**Client (Windows):**
-```
-1. Copy patcher.exe to C:\EverQuest\
-2. Run patcher.exe (creates config)
-3. Edit patcher-config.json:
-   {
-     "server_url": "http://84.46.251.4/patches",
-     "game_exe": "eqgame.exe",
-     "game_args": "patchme"
-   }
-4. Run patcher.exe
-5. Play!
-```
+### Give to Players:
+
+- `patcher.exe` (from `/var/www/eq-patches/patcher.exe`)
+- `patcher-config.json` (from `/var/www/eq-patches/patcher-config.json`)
+
+Players copy both files to their `C:\EverQuest\` folder and run `patcher.exe`!
 
 ## 📦 Distribution
 
