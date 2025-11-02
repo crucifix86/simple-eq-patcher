@@ -143,12 +143,13 @@ func makeConnectionTabIntegrated(state *AppState) *fyne.Container {
 	return container.NewPadded(form)
 }
 
-// makeFileUploadTabIntegrated creates the file upload tab with drag-and-drop
+// makeFileUploadTabIntegrated creates the file upload tab with checkboxes
 func makeFileUploadTabIntegrated(state *AppState) *fyne.Container {
-	// Local folder browser
+	// Local folder browser with checkboxes
 	var localRootPath string
 	var localFileMap map[string]*FileItem
-	var selectedLocalFiles []string
+	var fileList []*FileItem // Ordered list of files
+	selectedFiles := make(map[string]bool) // Track which files are checked
 	localFileMap = make(map[string]*FileItem)
 
 	localPathLabel := widget.NewLabel("📂 Local Folder: (not selected)")
@@ -170,11 +171,18 @@ func makeFileUploadTabIntegrated(state *AppState) *fyne.Container {
 				return
 			}
 
-			// Build file map
+			// Build file map and list
 			localFileMap = make(map[string]*FileItem)
+			fileList = make([]*FileItem, 0)
+			selectedFiles = make(map[string]bool)
+
 			var buildMap func(*FileItem, string)
 			buildMap = func(item *FileItem, path string) {
 				localFileMap[path] = item
+				if !item.IsDir {
+					fileList = append(fileList, item)
+					item.Path = path // Store full path
+				}
 				for _, child := range item.Children {
 					childPath := filepath.Join(path, child.Name)
 					buildMap(child, childPath)
@@ -184,51 +192,43 @@ func makeFileUploadTabIntegrated(state *AppState) *fyne.Container {
 		}, state.mainWindow)
 	})
 
+	// Select All checkbox
+	selectAllCheck := widget.NewCheck("Select All", func(checked bool) {
+		for _, item := range fileList {
+			selectedFiles[item.Path] = checked
+		}
+	})
+
 	localList := widget.NewList(
 		func() int {
-			count := 0
-			for _, item := range localFileMap {
-				if !item.IsDir {
-					count++
-				}
-			}
-			return count
+			return len(fileList)
 		},
 		func() fyne.CanvasObject {
-			return widget.NewLabel("template")
+			check := widget.NewCheck("", nil)
+			label := widget.NewLabel("template")
+			return container.NewHBox(check, label)
 		},
 		func(id widget.ListItemID, obj fyne.CanvasObject) {
-			label := obj.(*widget.Label)
-			i := 0
-			for path, item := range localFileMap {
-				if !item.IsDir {
-					if i == id {
-						label.SetText(fmt.Sprintf("📄 %s (%s)", item.Name, FormatFileSize(item.Size)))
-						// Store path for selection
-						_ = path
-						break
-					}
-					i++
-				}
+			if id >= len(fileList) {
+				return
 			}
+
+			item := fileList[id]
+			hbox := obj.(*fyne.Container)
+			check := hbox.Objects[0].(*widget.Check)
+			label := hbox.Objects[1].(*widget.Label)
+
+			// Set checkbox state
+			check.Checked = selectedFiles[item.Path]
+			check.OnChanged = func(checked bool) {
+				selectedFiles[item.Path] = checked
+			}
+
+			label.SetText(fmt.Sprintf("📄 %s (%s)", item.Name, FormatFileSize(item.Size)))
 		},
 	)
 
-	// Track selected files
-	localList.OnSelected = func(id widget.ListItemID) {
-		i := 0
-		for path, item := range localFileMap {
-			if !item.IsDir {
-				if i == id {
-					selectedLocalFiles = []string{path}
-					break
-				}
-				i++
-			}
-		}
-	}
-
-	// Right side - Remote folder tree (LARGER)
+	// Right side - Remote folder tree
 	remoteFolderList := widget.NewList(
 		func() int { return len(EQFolderStructure) },
 		func() fyne.CanvasObject {
@@ -245,9 +245,6 @@ func makeFileUploadTabIntegrated(state *AppState) *fyne.Container {
 			label.SetText(fmt.Sprintf("📁 %s", folder))
 		},
 	)
-
-	// Track selected files (not used currently, but kept for future)
-	_ = selectedLocalFiles
 
 	// Upload queue display
 	queueLabel := widget.NewLabel("Upload Queue: 0 files")
@@ -335,7 +332,7 @@ func makeFileUploadTabIntegrated(state *AppState) *fyne.Container {
 		updateQueueDisplay()
 	})
 
-	// Click folder to add files to queue (simulating drag-and-drop)
+	// Click folder to add SELECTED files to queue
 	remoteFolderList.OnSelected = func(id widget.ListItemID) {
 		if !state.connMgr.IsConnected() {
 			dialog.ShowError(fmt.Errorf("not connected to server"), state.mainWindow)
@@ -352,10 +349,15 @@ func makeFileUploadTabIntegrated(state *AppState) *fyne.Container {
 		destFolder := EQFolderStructure[id]
 		remotePath := state.connMgr.profile.RemotePath
 
-		// Add all files from local folder to this destination
+		// Add only SELECTED files to this destination
 		added := 0
-		for path, item := range localFileMap {
-			if item.IsDir {
+		for path, checked := range selectedFiles {
+			if !checked {
+				continue
+			}
+
+			item := localFileMap[path]
+			if item == nil || item.IsDir {
 				continue
 			}
 
@@ -367,18 +369,27 @@ func makeFileUploadTabIntegrated(state *AppState) *fyne.Container {
 		if added > 0 {
 			updateQueueDisplay()
 			// Show brief confirmation
-			statusMsg := fmt.Sprintf("✓ Added %d files to %s", added, destFolder)
+			statusMsg := fmt.Sprintf("✓ Added %d selected file(s) to %s", added, destFolder)
 			if destFolder == "" {
-				statusMsg = fmt.Sprintf("✓ Added %d files to Root", added)
+				statusMsg = fmt.Sprintf("✓ Added %d selected file(s) to Root", added)
 			}
 			dialog.ShowInformation("Files Added", statusMsg, state.mainWindow)
+
+			// Uncheck files after adding
+			for path := range selectedFiles {
+				selectedFiles[path] = false
+			}
+			selectAllCheck.Checked = false
+			localList.Refresh()
+		} else {
+			dialog.ShowError(fmt.Errorf("no files selected - check the boxes first"), state.mainWindow)
 		}
 
 		remoteFolderList.UnselectAll()
 	}
 
 	// Instructions
-	instructionsLabel := widget.NewLabel("💡 How to use: 1. Connect to server  2. Select local folder  3. Click a folder on the right to add ALL files to that destination  4. Upload!")
+	instructionsLabel := widget.NewLabel("💡 How to use: 1. Connect to server  2. Select local folder  3. Check files you want  4. Click destination folder  5. Repeat for different folders  6. Upload!")
 	instructionsLabel.Wrapping = fyne.TextWrapWord
 
 	// Layout - MUCH BIGGER PANELS
@@ -386,6 +397,7 @@ func makeFileUploadTabIntegrated(state *AppState) *fyne.Container {
 		container.NewVBox(
 			localPathLabel,
 			selectLocalFolderBtn,
+			selectAllCheck,
 		),
 		nil, nil, nil,
 		container.NewScroll(localList),
