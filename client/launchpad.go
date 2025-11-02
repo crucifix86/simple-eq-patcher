@@ -51,6 +51,24 @@ const (
 	configFile = "patcher-config.json"
 )
 
+// Directories managed by the patcher (these mirror the EQ client structure)
+var managedDirs = []string{
+	"ActorEffects",
+	"Atlas",
+	"AudioTriggers",
+	"EnvEmitterEffects",
+	"RenderEffects",
+	"Resources",
+	"SpellEffects",
+	"help",
+	"maps",
+	"sounds",
+	"storyline",
+	"uifiles",
+	"userdata",
+	"voice",
+}
+
 var (
 	config      *Config
 	statusLabel *widget.Label
@@ -249,19 +267,33 @@ func checkForUpdatesOnStartup(win fyne.Window) {
 		}
 	}
 
+	// Check for obsolete files (files not in manifest)
+	toDelete := findObsoleteFiles(manifest)
+
 	progressBar.Hide()
 
-	if len(toDownload) > 0 {
+	totalChanges := len(toDownload) + len(toDelete)
+
+	if totalChanges > 0 {
 		// Updates available - ask user
-		statusLabel.SetText(fmt.Sprintf("📦 %d update(s) available", len(toDownload)))
+		changeMsg := ""
+		if len(toDownload) > 0 && len(toDelete) > 0 {
+			changeMsg = fmt.Sprintf("%d file(s) to update, %d file(s) to remove", len(toDownload), len(toDelete))
+		} else if len(toDownload) > 0 {
+			changeMsg = fmt.Sprintf("%d file(s) to update", len(toDownload))
+		} else {
+			changeMsg = fmt.Sprintf("%d file(s) to remove", len(toDelete))
+		}
+
+		statusLabel.SetText(fmt.Sprintf("📦 %d change(s) available", totalChanges))
 
 		dialog.ShowConfirm(
 			"Updates Available",
-			fmt.Sprintf("%d file(s) need to be updated.\n\nWould you like to download updates now?\n\n(You can also play without updating)", len(toDownload)),
+			fmt.Sprintf("%s\n\nWould you like to apply updates now?\n\n(You can also play without updating)", changeMsg),
 			func(update bool) {
 				if update {
-					// Download updates
-					go performUpdate(win, toDownload)
+					// Apply updates (download new files and remove obsolete ones)
+					go performUpdate(win, toDownload, toDelete)
 				} else {
 					// Skip updates
 					statusLabel.SetText("✓ Ready to play (updates skipped)")
@@ -277,16 +309,19 @@ func checkForUpdatesOnStartup(win fyne.Window) {
 	}
 }
 
-func performUpdate(win fyne.Window, toDownload []FileEntry) {
+func performUpdate(win fyne.Window, toDownload []FileEntry, toDelete []string) {
 	playButton.Disable()
-	statusLabel.SetText(fmt.Sprintf("📥 Downloading %d file(s)...", len(toDownload)))
 	progressBar.Show()
 	progressBar.SetValue(0)
 
-	for i, file := range toDownload {
-		progress := float64(i) / float64(len(toDownload))
+	totalOperations := len(toDownload) + len(toDelete)
+	currentOp := 0
+
+	// Download new/updated files
+	for _, file := range toDownload {
+		progress := float64(currentOp) / float64(totalOperations)
 		progressBar.SetValue(progress)
-		statusLabel.SetText(fmt.Sprintf("📥 Downloading %s (%d/%d)", filepath.Base(file.Path), i+1, len(toDownload)))
+		statusLabel.SetText(fmt.Sprintf("📥 Downloading %s (%d/%d)", filepath.Base(file.Path), currentOp+1, totalOperations))
 
 		err := downloadFile(config.ServerURL, file.Path)
 		if err != nil {
@@ -296,6 +331,22 @@ func performUpdate(win fyne.Window, toDownload []FileEntry) {
 			playButton.Enable()
 			return
 		}
+		currentOp++
+	}
+
+	// Delete obsolete files
+	for _, filePath := range toDelete {
+		progress := float64(currentOp) / float64(totalOperations)
+		progressBar.SetValue(progress)
+		statusLabel.SetText(fmt.Sprintf("🗑️ Removing %s (%d/%d)", filepath.Base(filePath), currentOp+1, totalOperations))
+
+		err := os.Remove(filePath)
+		if err != nil {
+			// Don't fail the entire update if we can't delete a file
+			// Just log it and continue
+			fmt.Printf("Warning: Could not delete %s: %v\n", filePath, err)
+		}
+		currentOp++
 	}
 
 	progressBar.SetValue(1.0)
@@ -645,6 +696,49 @@ func checkLauncherUpdates(manifest *Manifest) bool {
 	}
 
 	return false
+}
+
+// findObsoleteFiles scans managed directories and returns files that are not in the manifest
+func findObsoleteFiles(manifest *Manifest) []string {
+	obsolete := []string{}
+
+	// Create a map of all files in manifest for quick lookup
+	manifestFiles := make(map[string]bool)
+	for _, file := range manifest.Files {
+		manifestFiles[filepath.ToSlash(file.Path)] = true
+	}
+
+	// Scan each managed directory
+	for _, dir := range managedDirs {
+		// Check if directory exists
+		if _, err := os.Stat(dir); os.IsNotExist(err) {
+			continue
+		}
+
+		// Walk the directory tree
+		filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return nil
+			}
+
+			// Skip directories
+			if info.IsDir() {
+				return nil
+			}
+
+			// Convert to forward slashes for comparison
+			normalizedPath := filepath.ToSlash(path)
+
+			// Check if file is in manifest
+			if !manifestFiles[normalizedPath] {
+				obsolete = append(obsolete, path)
+			}
+
+			return nil
+		})
+	}
+
+	return obsolete
 }
 
 func showError(win fyne.Window, message string) {
