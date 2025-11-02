@@ -212,11 +212,16 @@ else
     echo "  ℹ️  ufw not installed"
 fi
 
-# Get server IP
+# Get server IP (force IPv4)
 echo ""
 echo "🌍 Detecting server IP..."
-SERVER_IP=$(curl -s ifconfig.me 2>/dev/null || echo "YOUR_SERVER_IP")
-echo "  Server IP: $SERVER_IP"
+SERVER_IP=$(curl -4 -s ifconfig.me 2>/dev/null || curl -4 -s icanhazip.com 2>/dev/null || echo "YOUR_SERVER_IP")
+if [[ "$SERVER_IP" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    echo "  Server IPv4: $SERVER_IP"
+else
+    echo "  ⚠️  Could not detect IPv4 address: $SERVER_IP"
+    echo "  Please manually update patcher-config.json with your server's IPv4 address"
+fi
 
 # Copy client files for distribution
 echo ""
