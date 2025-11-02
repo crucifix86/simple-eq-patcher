@@ -1,0 +1,29 @@
+# Binaries
+server/manifest-builder
+client/patcher.exe
+client/patcher-linux
+client/patcher
+
+# Test files
+test/
+*.test
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temp files
+*.tmp
+*.log
+
+# Build artifacts
+*.o
+*.a
+*.so
+*.exe~
